@@ -8,15 +8,15 @@ This repository contains an educational project developed as part of the course 
 
 1. **Download the dataset**
 
-   - Obtain the dataset required for the project.
+   - Obtain the dataset required for the project.[Kaggle Dataset](https://www.kaggle.com/datasets/prokshitha/home-value-insights)
    - Place it inside the following directory:
      ```bash
-     images/raw/
+     data/raw/
      ```
 
 2. **Install dependencies**
 
-   - From the project’s root directory, open a terminal and run:
+   - From the project's root directory, open a terminal and run:
      ```bash
      uv sync
      ```
