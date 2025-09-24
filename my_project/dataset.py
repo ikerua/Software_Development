@@ -3,6 +3,8 @@ from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
+from joblib import dump
+import os
 # Data Module
 class HousePricingDataModule(pl.LightningDataModule): #data loading and processing
     def __init__(self, data_dir='.', batch_size=64, num_workers=8):
@@ -12,44 +14,59 @@ class HousePricingDataModule(pl.LightningDataModule): #data loading and processi
         self.num_workers = num_workers
 
     def prepare_data(self):
+        
+
         data_interim_dir = '../data/interim/'
         data_processed_dir = '../data/processed/'
-        # Load from CSV data/raw/house_price_regression_dataset.csv
+        os.makedirs(data_interim_dir, exist_ok=True)
+        os.makedirs(data_processed_dir, exist_ok=True)
+
+        # 1) Cargar dataset crudo
         df = pd.read_csv(self.data_dir)
-    
         print(f"Dataset loaded with shape: {df.shape}")
 
-        # Basic data splitting
-        X,y = df.drop('House_Price', axis=1), df['House_Price']
+        X, y = df.drop('House_Price', axis=1), df['House_Price']
         print(f"Features shape: {X.shape}, Target shape: {y.shape}")
 
-        # Split the data into train, val, test sets
-        X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.2,random_state=42)
-        X_train,X_val,y_train,y_val = train_test_split(X_train,y_train,test_size=0.25,random_state=42) 
-        train_df = pd.concat([X_train, y_train], axis=1)
-        val_df = pd.concat([X_val, y_val], axis=1)
-        test_df = pd.concat([X_test, y_test], axis=1)
-        
-        # Save interim data
-        train_df.to_csv(data_interim_dir + 'train.csv', index=False)
-        val_df.to_csv(data_interim_dir + 'val.csv', index=False)
-        test_df.to_csv(data_interim_dir + 'test.csv', index=False)
-        print("Data split into train, val, and test sets. Interim files saved.")
+        # 2) Split
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        X_train, X_val,  y_train, y_val  = train_test_split(X_train, y_train, test_size=0.25, random_state=42)
 
-        # Basic data processing (e.g., normalization)
-        normalizer = StandardScaler()
-        X_train_norm = pd.DataFrame(normalizer.fit_transform(X_train), columns=X_train.columns)
-        X_train_norm['House_Price'] = y_train.values
-        X_val_norm = pd.DataFrame(normalizer.transform(X_val), columns=X_val.columns)
-        X_val_norm['House_Price'] = y_val.values
-        X_test_norm = pd.DataFrame(normalizer.transform(X_test), columns=X_test.columns)
-        X_test_norm['House_Price'] = y_test.values
+        # Guardar INTERIM (sin escalar)
+        pd.concat([X_train, y_train], axis=1).to_csv(os.path.join(data_interim_dir, 'train.csv'), index=False)
+        pd.concat([X_val,   y_val],   axis=1).to_csv(os.path.join(data_interim_dir, 'val.csv'),   index=False)
+        pd.concat([X_test,  y_test],  axis=1).to_csv(os.path.join(data_interim_dir, 'test.csv'),  index=False)
+        print("Interim files saved.")
 
-        # Save processed data
-        X_train_norm.to_csv(data_processed_dir + 'train.csv', index=False)
-        X_val_norm.to_csv(data_processed_dir + 'val.csv', index=False)
-        X_test_norm.to_csv(data_processed_dir + 'test.csv', index=False)
-        print("Data normalized and processed files saved.")
+        # 3) Escalado X & y
+        x_scaler = StandardScaler()
+        y_scaler = StandardScaler()
+
+        X_train_s = pd.DataFrame(x_scaler.fit_transform(X_train), columns=X_train.columns)
+        X_val_s   = pd.DataFrame(x_scaler.transform(X_val),       columns=X_val.columns)
+        X_test_s  = pd.DataFrame(x_scaler.transform(X_test),      columns=X_test.columns)
+
+        y_train_s = y_scaler.fit_transform(y_train.to_numpy().reshape(-1, 1)).ravel()
+        y_val_s   = y_scaler.transform(y_val.to_numpy().reshape(-1, 1)).ravel()
+        y_test_s  = y_scaler.transform(y_test.to_numpy().reshape(-1, 1)).ravel()
+
+        # 4) Guardar PROCESSED (y escalado)
+        X_train_s['House_Price'] = y_train_s
+        X_val_s['House_Price']   = y_val_s
+        X_test_s['House_Price']  = y_test_s
+
+        X_train_s.to_csv(os.path.join(data_processed_dir, 'train.csv'), index=False)
+        X_val_s.to_csv(os.path.join(data_processed_dir, 'val.csv'),   index=False)
+        X_test_s.to_csv(os.path.join(data_processed_dir, 'test.csv'),  index=False)
+        print("Processed files saved (scaled X & y).")
+
+        # 5) Guardar scalers
+        dump(x_scaler, os.path.join(data_processed_dir, 'x_scaler.joblib'))
+        dump(y_scaler, os.path.join(data_processed_dir, 'y_scaler.joblib'))
+        print("Scalers saved: x_scaler.joblib, y_scaler.joblib")
+
+
     def setup(self, stage=None):
         data_processed_dir = '../data/processed/'
         # Setup datasets for each stage

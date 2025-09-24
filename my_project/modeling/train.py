@@ -6,6 +6,7 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning.loggers import CSVLogger   # 👈 nuevo
 from my_project.model import HousePriceRegressor
 
 def load_xy(path_csv: str, target_col: str = "House_Price"):
@@ -19,7 +20,9 @@ def main(args):
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     data_proc = os.path.join(root, "data", "processed")
     models_dir = os.path.join(root, "models")
+    logs_dir = os.path.join(root, "reports", "logs")
     os.makedirs(models_dir, exist_ok=True)
+    os.makedirs(logs_dir, exist_ok=True)
 
     # Load training and validation data
     X_train, y_train = load_xy(os.path.join(data_proc, "train.csv"))
@@ -50,9 +53,13 @@ def main(args):
         monitor="val_loss",
         mode="min",
         save_top_k=1,
+        verbose=False,
     )
     # Set up early stopping callback
     es_cb = EarlyStopping(monitor="val_loss", mode="min", patience=10)
+
+    # CSV logger
+    csv_logger = CSVLogger(save_dir=logs_dir, name="house_price")
 
     # Initialize PyTorch Lightning trainer
     trainer = pl.Trainer(
@@ -62,13 +69,15 @@ def main(args):
         deterministic=True,
         callbacks=[ckpt_cb, es_cb],
         log_every_n_steps=10,
+        logger=csv_logger,
     )
 
     # Train the model
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
+    print(f"Logs guardados en: {csv_logger.log_dir}")
+
 if __name__ == "__main__":
-    # Parse command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--num_workers", type=int, default=4)

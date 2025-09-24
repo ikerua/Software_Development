@@ -19,4 +19,5 @@ dependencies = [
     "torch>=2.7.1",
     "torchinfo>=1.8.0",
     "torchvision>=0.22.1",
+    "typst>=0.13.7",
 ]
