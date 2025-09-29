@@ -5,17 +5,71 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 from joblib import dump
 import os
+import torch
+
 # Data Module
-class HousePricingDataModule(pl.LightningDataModule): #data loading and processing
+class HousePricingDataModule(pl.LightningDataModule):
+    """
+    PyTorch Lightning DataModule handling the full data pipeline for the
+    House Price Regression task, including loading, splitting, scaling,
+    and creating data loaders.
+
+    Attributes
+    ----------
+    data_dir : str
+        Path to the raw input CSV file.
+    batch_size : int
+        Batch size for the training DataLoader.
+    num_workers : int
+        Number of workers for data loading.
+    train_ds : pandas.DataFrame or None
+        Training dataset containing scaled features and target.
+    val_ds : pandas.DataFrame or None
+        Validation dataset containing scaled features and target.
+    test_ds : pandas.DataFrame or None
+        Test dataset containing scaled features and target.
+
+    Examples
+    --------
+    >>> data_module = HousePricingDataModule(data_dir='./data.csv', batch_size=32)
+    >>> data_module.prepare_data()
+    >>> data_module.setup(stage='fit')
+    >>> train_loader = data_module.train_dataloader()
+    """
+
     def __init__(self, data_dir='.', batch_size=64, num_workers=8):
+        """
+        Initializes the data module settings.
+
+        Parameters
+        ----------
+        data_dir : str, optional
+            Path to the raw CSV file containing the data. 
+            By default '.', which should be replaced by the actual path to the raw data file.
+        batch_size : int, optional
+            The size of the mini-batch used during training, by default 64.
+        num_workers : int, optional
+            The number of subprocesses to use for data loading, by default 8.
+        """
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.train_ds = None
+        self.val_ds = None
+        self.test_ds = None
+
 
     def prepare_data(self):
-        
+        """
+        Preprocess the dataset and save interim and processed files.
 
+        Examples
+        --------
+        >>> dm = HousePricingDataModule(data_dir="./data/raw/house_prices.csv")
+        >>> dm.prepare_data()  # creates interim and processed CSVs
+        """
+        
         data_interim_dir = '../data/interim/'
         data_processed_dir = '../data/processed/'
         os.makedirs(data_interim_dir, exist_ok=True)
@@ -28,10 +82,9 @@ class HousePricingDataModule(pl.LightningDataModule): #data loading and processi
         X, y = df.drop('House_Price', axis=1), df['House_Price']
         print(f"Features shape: {X.shape}, Target shape: {y.shape}")
 
-        # 2) Split
-        from sklearn.model_selection import train_test_split
+        # 2) Split: 60% Train, 20% Val, 20% Test
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        X_train, X_val,  y_train, y_val  = train_test_split(X_train, y_train, test_size=0.25, random_state=42)
+        X_train, X_val, y_train, y_val  = train_test_split(X_train, y_train, test_size=0.25, random_state=42) # 0.25 of 0.8 is 0.2
 
         # Guardar INTERIM (sin escalar)
         pd.concat([X_train, y_train], axis=1).to_csv(os.path.join(data_interim_dir, 'train.csv'), index=False)
@@ -67,7 +120,18 @@ class HousePricingDataModule(pl.LightningDataModule): #data loading and processi
         print("Scalers saved: x_scaler.joblib, y_scaler.joblib")
 
 
-    def setup(self, stage=None):
+    def setup(self, stage: Optional[str] = None):
+        """
+        Loads the pre-processed datasets from the processed data
+        directory into pandas DataFrames.
+
+        Parameters
+        ----------
+        stage : str or None, optional
+            The current stage of training ('fit', 'validate', 'test', 'predict'). 
+            If 'fit' or None, loads train and validation sets. If 'test' or None, 
+            loads the test set. By default None.
+        """
         data_processed_dir = '../data/processed/'
         # Setup datasets for each stage
         if stage == 'fit' or stage is None:
@@ -78,23 +142,63 @@ class HousePricingDataModule(pl.LightningDataModule): #data loading and processi
             self.test_ds = pd.read_csv(data_processed_dir + 'test.csv')
 
     def train_dataloader(self):
+        """
+        Returns the DataLoader for the training set.
+
+        Returns
+        -------
+        torch.utils.data.DataLoader
+            DataLoader configured with `self.batch_size`, shuffling enabled, 
+            and `self.num_workers`.
+        """
+        # We need to explicitly convert the DataFrame to Tensors for the DataLoader
+        train_features = torch.tensor(self.train_ds.drop('House_Price', axis=1).values, dtype=torch.float32)
+        train_targets = torch.tensor(self.train_ds['House_Price'].values, dtype=torch.float32)
+        train_dataset = torch.utils.data.TensorDataset(train_features, train_targets)
+        
         return DataLoader(
-            self.train_ds, 
+            train_dataset, 
             batch_size=self.batch_size, 
             num_workers=self.num_workers, 
             shuffle=True
         )
 
     def val_dataloader(self):
+        """
+        Returns the DataLoader for the validation set.
+
+        Returns
+        -------
+        torch.utils.data.DataLoader
+            DataLoader configured with a fixed batch size of 1000 and 
+            no shuffling.
+        """
+        val_features = torch.tensor(self.val_ds.drop('House_Price', axis=1).values, dtype=torch.float32)
+        val_targets = torch.tensor(self.val_ds['House_Price'].values, dtype=torch.float32)
+        val_dataset = torch.utils.data.TensorDataset(val_features, val_targets)
+
         return DataLoader(
-            self.val_ds, 
+            val_dataset, 
             batch_size=1000, 
             num_workers=self.num_workers
         )
 
     def test_dataloader(self):
+        """
+        Returns the DataLoader for the test set.
+
+        Returns
+        -------
+        torch.utils.data.DataLoader
+            DataLoader configured with a fixed batch size of 1000 and 
+            no shuffling.
+        """
+        test_features = torch.tensor(self.test_ds.drop('House_Price', axis=1).values, dtype=torch.float32)
+        test_targets = torch.tensor(self.test_ds['House_Price'].values, dtype=torch.float32)
+        test_dataset = torch.utils.data.TensorDataset(test_features, test_targets)
+        
         return DataLoader(
-            self.test_ds, 
+            test_dataset, 
             batch_size=1000, 
             num_workers=self.num_workers
         )
