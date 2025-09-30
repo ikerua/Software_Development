@@ -7,7 +7,7 @@ on:
       - main
     # Alternative: only build for tags.
     # tags:
-    #   - '*'
+    #   '*'
 
 # security: restrict permissions for CI jobs.
 permissions:
@@ -27,9 +27,8 @@ jobs:
 
       # ADJUST THIS: install all dependencies (including pdoc)
       - run: pip install -e .
-      # ADJUST THIS: build your documentation into docs/.
-      # We use a custom build script for pdoc itself, ideally you just run `pdoc -o docs/ ...` here.
-      - run: pdoc .\my_project\ .\my_project\modeling\ -o .\docs\
+      # Solo genera la documentación de my_project/
+      - run: pdoc ./my_project/ -o ./docs/
 
       - uses: actions/upload-pages-artifact@v4
         with:
