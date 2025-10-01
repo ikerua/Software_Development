@@ -75,24 +75,36 @@ class HousePricingDataModule(pl.LightningDataModule):
         data_processed_dir = '../data/processed/'
         os.makedirs(data_interim_dir, exist_ok=True)
         os.makedirs(data_processed_dir, exist_ok=True)
+        if not os.listdir(data_interim_dir):
+            # 1) Cargar dataset crudo
+            df = pd.read_csv(self.data_dir)
+            print(f"Dataset loaded with shape: {df.shape}")
 
-        # 1) Cargar dataset crudo
-        df = pd.read_csv(self.data_dir)
-        print(f"Dataset loaded with shape: {df.shape}")
+            X, y = df.drop('House_Price', axis=1), df['House_Price']
+            print(f"Features shape: {X.shape}, Target shape: {y.shape}")
 
-        X, y = df.drop('House_Price', axis=1), df['House_Price']
-        print(f"Features shape: {X.shape}, Target shape: {y.shape}")
+            # 2) Split: 60% Train, 20% Val, 20% Test
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            X_train, X_val, y_train, y_val  = train_test_split(X_train, y_train, test_size=0.25, random_state=42) # 0.25 of 0.8 is 0.2
 
-        # 2) Split: 60% Train, 20% Val, 20% Test
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-        X_train, X_val, y_train, y_val  = train_test_split(X_train, y_train, test_size=0.25, random_state=42) # 0.25 of 0.8 is 0.2
-
-        # Guardar INTERIM (sin escalar)
-        pd.concat([X_train, y_train], axis=1).to_csv(os.path.join(data_interim_dir, 'train.csv'), index=False)
-        pd.concat([X_val,   y_val],   axis=1).to_csv(os.path.join(data_interim_dir, 'val.csv'),   index=False)
-        pd.concat([X_test,  y_test],  axis=1).to_csv(os.path.join(data_interim_dir, 'test.csv'),  index=False)
-        print("Interim files saved.")
-
+            # Guardar INTERIM (sin escalar)
+            pd.concat([X_train, y_train], axis=1).to_csv(os.path.join(data_interim_dir, 'train.csv'), index=False)
+            pd.concat([X_val,   y_val],   axis=1).to_csv(os.path.join(data_interim_dir, 'val.csv'),   index=False)
+            pd.concat([X_test,  y_test],  axis=1).to_csv(os.path.join(data_interim_dir, 'test.csv'),  index=False)
+            print("Interim files saved.")
+            
+        elif not os.listdir(data_processed_dir):
+            # Cargar INTERIM
+            X_train = pd.read_csv(os.path.join(data_interim_dir, 'train.csv')).drop('House_Price', axis=1)
+            y_train = pd.read_csv(os.path.join(data_interim_dir, 'train.csv'))['House_Price']
+            X_val   = pd.read_csv(os.path.join(data_interim_dir, 'val.csv')).drop('House_Price', axis=1)
+            y_val   = pd.read_csv(os.path.join(data_interim_dir, 'val.csv'))['House_Price']
+            X_test  = pd.read_csv(os.path.join(data_interim_dir, 'test.csv')).drop('House_Price', axis=1)
+            y_test  = pd.read_csv(os.path.join(data_interim_dir, 'test.csv'))['House_Price']
+            print("Interim files loaded for processing.")
+        else:
+            print("Data already prepared. Skipping preparation step.")
+    
         # 3) Escalado X & y
         x_scaler = StandardScaler()
         y_scaler = StandardScaler()
@@ -119,6 +131,7 @@ class HousePricingDataModule(pl.LightningDataModule):
         dump(x_scaler, os.path.join(data_processed_dir, 'x_scaler.joblib'))
         dump(y_scaler, os.path.join(data_processed_dir, 'y_scaler.joblib'))
         print("Scalers saved: x_scaler.joblib, y_scaler.joblib")
+       
 
 
     def setup(self, stage: Optional[str] = None):
