@@ -4,7 +4,7 @@ Machine Learning-Oriented Software Development Project
 
 This repository contains an educational project developed as part of the course **Software Development Oriented to Machine Learning**. The goal is to apply good software engineering practices to a machine learning workflow, from data acquisition to experimentation and reproducibility.
 
-You can visit code documentation on the following [page](https://ikerua.github.io/Software_Development/https://)
+You can visit code documentation on the following [page](https://ikerua.github.io/Software_Development/)
 
 ## Setup Instructions
 
