@@ -1,4 +1,9 @@
-# my_project/modeling/predict.py
+"""
+This module contains functions and classes for making predictions with trained models.
+It includes functionalities to load a trained model, run inference on test data,
+and save the prediction results.
+"""
+
 import os
 import argparse
 import numpy as np
@@ -8,11 +13,7 @@ from joblib import load
 from typing import Tuple
 
 from my_project.model import HousePriceRegressor
-"""
-This module contains functions and classes for making predictions with trained models.
-It includes functionalities to load a trained model, run inference on test data,
-and save the prediction results.
-"""
+
 def _resolve_paths(data_dir: str, models_dir: str, output_path: str) -> Tuple[str, str, str]:
     """
     Resolve relative paths to absolute paths based on the project root 
