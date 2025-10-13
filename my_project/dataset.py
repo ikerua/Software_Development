@@ -9,6 +9,11 @@ import torch
 from typing import Optional
 
 # Data Module
+"""
+This module contains the DataModule for the House Price Regression task.
+It handles loading, splitting, scaling, and creating data loaders for
+the dataset.
+"""
 class HousePricingDataModule(pl.LightningDataModule):
     """
     PyTorch Lightning DataModule handling the full data pipeline for the
