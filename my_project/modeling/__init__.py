@@ -1,5 +1,3 @@
-__docformat__ = "numpy"
-
 """
 Modeling module.
 
@@ -13,5 +11,8 @@ train : module
 predict : module
     Functions and classes for making predictions with trained models.
 """
+
+__docformat__ = "numpy"
+
 from my_project.modeling.train import *
 from my_project.modeling.predict import *
