@@ -1,3 +1,10 @@
+"""
+This module contains functions and classes for training machine learning
+models and generating predictions.
+It includes functionalities to load data, configure training,
+and execute the training process using PyTorch Lightning.
+"""
+
 import os
 import argparse
 import numpy as np
@@ -9,12 +16,6 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import CSVLogger
 from my_project.model import HousePriceRegressor  # Assumed import
 
-"""
-This module contains functions and classes for training machine learning
-models and generating predictions.
-It includes functionalities to load data, configure training,
-and execute the training process using PyTorch Lightning.
-"""
 def load_xy(path_csv: str, target_col: str = "House_Price"):
     """
     Load features (X) and target (y) tensors from a CSV file.

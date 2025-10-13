@@ -1,12 +1,13 @@
+"""
+This module contains the PyTorch Lightning model for the House Price
+Regression task. It defines a simple feed-forward neural network (MLP)
+"""
+
 from typing import List, Optional
 import torch
 from torch import nn
 import pytorch_lightning as pl
 
-"""
-This module contains the PyTorch Lightning model for the House Price
-Regression task. It defines a simple feed-forward neural network (MLP)
-"""
 class HousePriceRegressor(pl.LightningModule):
     """
     PyTorch Lightning module for house price regression.
