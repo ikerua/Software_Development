@@ -4,6 +4,8 @@ It includes functionalities to load a trained model, run inference on test data,
 and save the prediction results.
 """
 
+__docformat__ = "numpy"
+
 import os
 import argparse
 import numpy as np

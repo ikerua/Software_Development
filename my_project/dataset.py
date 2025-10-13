@@ -4,6 +4,8 @@ It handles loading, splitting, scaling, and creating data loaders for
 the dataset.
 """
 
+__docformat__ = "numpy"
+
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split

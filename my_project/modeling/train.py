@@ -5,6 +5,8 @@ It includes functionalities to load data, configure training,
 and execute the training process using PyTorch Lightning.
 """
 
+__docformat__ = "numpy"
+
 import os
 import argparse
 import numpy as np

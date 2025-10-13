@@ -3,6 +3,8 @@ This module contains the PyTorch Lightning model for the House Price
 Regression task. It defines a simple feed-forward neural network (MLP)
 """
 
+__docformat__ = "numpy"
+
 from typing import List, Optional
 import torch
 from torch import nn
