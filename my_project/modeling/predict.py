@@ -13,6 +13,8 @@ import pandas as pd
 import torch
 from joblib import load
 from typing import Tuple
+from pathlib import Path
+
 
 from my_project.model import HousePriceRegressor
 
@@ -40,12 +42,14 @@ def _resolve_paths(data_dir: str, models_dir: str, output_path: str) -> Tuple[st
     >>> _resolve_paths("data/processed", "models", "models/test_predictions.csv")
     ('C:/project/data/processed', 'C:/project/models', 'C:/project/models/test_predictions.csv')
     """
-    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    data_dir = os.path.abspath(os.path.join(root, data_dir)) if not os.path.isabs(data_dir) else data_dir
-    models_dir = os.path.abspath(os.path.join(root, models_dir)) if not os.path.isabs(models_dir) else models_dir
-    output_path = os.path.abspath(os.path.join(root, output_path)) if not os.path.isabs(output_path) else output_path
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    return data_dir, models_dir, output_path
+    root = Path(__file__).resolve().parents[2]
+    
+    data_dir_abs = root / data_dir
+    models_dir_abs = root / models_dir
+    output_path_abs = root / output_path
+    
+    os.makedirs(output_path_abs.parent, exist_ok=True)
+    return str(data_dir_abs), str(models_dir_abs), str(output_path_abs)
 
 
 def _pick_ckpt(models_dir: str) -> str:
@@ -72,10 +76,17 @@ def _pick_ckpt(models_dir: str) -> str:
     >>> _pick_ckpt("models")
     'C:/project/models/house_price_regressor.ckpt'
     """
-    ckpt_path = os.path.join(models_dir, "house_price_regressor.ckpt")
-    if not os.path.exists(ckpt_path):
-        raise FileNotFoundError(f"{ckpt_path} does not exist. Train the model first.")
-    return ckpt_path
+    models_path = Path(models_dir)
+    ckpt_files = list(models_path.glob("*.ckpt"))
+    
+    if not ckpt_files:
+        raise FileNotFoundError(f"No .ckpt files found in {models_dir}. Train the model first.")
+    
+    # Encuentra el archivo modificado más recientemente
+    latest_ckpt = max(ckpt_files, key=lambda p: p.stat().st_mtime)
+    
+    print(f"Found latest checkpoint: {latest_ckpt}")
+    return str(latest_ckpt)
 
 
 def run_predict(

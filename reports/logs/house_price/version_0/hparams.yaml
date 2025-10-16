@@ -1,6 +1,0 @@
-hidden_dims:
-- 64
-- 32
-input_dim: 7
-lr: 0.001
-weight_decay: 0.0

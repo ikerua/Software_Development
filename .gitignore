@@ -1,0 +1,7 @@
+/.venv
+uv.lock
+/my_project/__pycache__
+/my_project/modeling/__pycache__
+notebooks/lightning_logs
+/my_project/gradio/__pycache__
+/my_project/gradio/.gradio

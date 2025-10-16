@@ -454,15 +454,15 @@ def create_analysis_tab():
             with gr.Column(scale=1):
                 gr.Markdown("### 📁 File Paths Configuration")
                 pred_path_input = gr.Textbox(
-                    value="../models/test_predictions.csv",
+                    value="../../models/test_predictions.csv",
                     label="Predictions CSV Path"
                 )
                 test_path_input = gr.Textbox(
-                    value="../data/processed/test.csv",
+                    value="../../data/processed/test.csv",
                     label="Test Data CSV Path"
                 )
                 log_dir_input = gr.Textbox(
-                    value="../reports/logs/house_price/version_1",
+                    value="../../reports/logs/house_price/version_1",
                     label="Training Logs Directory"
                 )
         

@@ -25,9 +25,9 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../..')))
 sys.path.append('./modules')
 
 # Import module functions
-from notebooks.gradio.Data_Visualization_Interface import create_data_viz_tab
-from notebooks.gradio.Train_Interface import create_training_tabs
-from notebooks.gradio.Performance_Analysis_Interface import create_analysis_tab
+from my_project.gradio.Data_Visualization_Interface import create_data_viz_tab
+from my_project.gradio.Train_Interface import create_training_tabs
+from my_project.gradio.Performance_Analysis_Interface import create_analysis_tab
 
 # Create the main interface
 with gr.Blocks(
