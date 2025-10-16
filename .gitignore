@@ -1,7 +1,0 @@
-/.venv
-uv.lock
-/my_project/__pycache__
-/my_project/modeling/__pycache__
-/data/raw
-notebooks/lightning_logs
-notebooks/gradio/.gradio
