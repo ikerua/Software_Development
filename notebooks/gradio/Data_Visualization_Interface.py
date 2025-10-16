@@ -487,4 +487,4 @@ with gr.Blocks(title="House Price Data Visualization", theme=gr.themes.Soft()) a
 
 # Launch the interface
 if __name__ == "__main__":
-    demo.launch(share=True, server_name="0.0.0.0", server_port=7860)
+    demo.launch()

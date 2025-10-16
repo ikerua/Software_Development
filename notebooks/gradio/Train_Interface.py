@@ -37,7 +37,7 @@ def prepare_data(data_path, train_ratio, val_ratio, test_ratio, progress=gr.Prog
         # Validate ratios sum to 1.0
         total = train_ratio + val_ratio + test_ratio
         if abs(total - 1.0) > 0.01:
-            return f"### ❌ Error: Ratios must sum to 1.0 (currently {total:.2f})", gr.update(interactive=False)
+            return f"### ❌ Error: Ratios must sum to 1.0 (currently {total:.2f})", False, None
         
         progress(0, desc="Initializing data module...")
         
@@ -76,11 +76,6 @@ def prepare_data(data_path, train_ratio, val_ratio, test_ratio, progress=gr.Prog
         - **Validation Ratio**: {val_ratio:.1%} → {val_size} samples
         - **Test Ratio**: {test_ratio:.1%} → {test_size} samples
         
-        **Verification:**
-        - Actual Train: {train_size/total_size:.1%}
-        - Actual Val: {val_size/total_size:.1%}
-        - Actual Test: {test_size/total_size:.1%}
-        
         **Status**: ✅ Ready for training
         
         📁 Processed data saved to: `data/processed/`
@@ -108,26 +103,41 @@ def prepare_data(data_path, train_ratio, val_ratio, test_ratio, progress=gr.Prog
         for i, v in enumerate(sizes):
             ax2.text(i, v + max(sizes)*0.02, str(v), ha='center', fontweight='bold')
         
-
         plt.tight_layout()
         
         return stats, True, fig
         
     except Exception as e:
-        return f"### ❌ Error: {str(e)}", gr.update(interactive=False), None
+        return f"### ❌ Error: {str(e)}", False, None
 
 def update_test_ratio(train_val, val_val):
     """Auto-calculate test ratio to ensure sum = 1.0"""
     test_val = 1.0 - train_val - val_val
     return gr.update(value=max(0.0, min(1.0, test_val)))
 
-def train_model(batch_size, learning_rate, weight_decay, epochs, num_workers, progress=gr.Progress()):
+def show_training_message(batch_size, learning_rate, weight_decay, epochs, num_workers):
+    """Show initial training message"""
+    msg = f"""
+    ### 🏋️ Training in Progress...
+    
+    **Configuration:**
+    - **Batch Size**: {batch_size}
+    - **Learning Rate**: {learning_rate}
+    - **Weight Decay**: {weight_decay}
+    - **Epochs**: {epochs}
+    - **Workers**: {num_workers}
+    
+    ⏳ **Please wait... Training the model...**
+    
+    _This may take several minutes. Do not close this window._
+    """
+    return msg, gr.update(visible=True)
+
+def train_model(batch_size, learning_rate, weight_decay, epochs, num_workers):
     """Train the regression model"""
-    global trained_model_path, training_history
+    global trained_model_path
     
     try:
-        progress(0, desc="Starting training...")
-        
         # Create arguments
         args = argparse.Namespace(
             batch_size=int(batch_size),
@@ -138,7 +148,6 @@ def train_model(batch_size, learning_rate, weight_decay, epochs, num_workers, pr
         )
         
         # Train the model
-        progress(0.3, desc="Training model...")
         train.main(args)
         
         # Find the latest model
@@ -147,9 +156,7 @@ def train_model(batch_size, learning_rate, weight_decay, epochs, num_workers, pr
         if model_files:
             trained_model_path = str(max(model_files, key=os.path.getctime))
         
-        progress(1.0, desc="Training complete!")
-        
-        stats = f"""
+        success_msg = f"""
         ### ✅ Training Complete!
         
         **Training Configuration:**
@@ -164,18 +171,30 @@ def train_model(batch_size, learning_rate, weight_decay, epochs, num_workers, pr
         🎉 Model is ready for predictions!
         """
         
-        return stats, True, gr.update(visible=True)
+        return success_msg, True, gr.update(visible=False)
         
     except Exception as e:
-        return f"### ❌ Training Error: {str(e)}", gr.update(interactive=False), gr.update(visible=False)
+        import traceback
+        error_details = traceback.format_exc()
+        error_msg = f"""
+        ### ❌ Training Error
+        
+        **Error**: {str(e)}
+        
+        **Details**:
+        ```
+        {error_details}
+        ```
+        """
+        return error_msg, False, gr.update(visible=False)
 
 def make_predictions(data_dir, models_dir, output_path, target_col, progress=gr.Progress()):
     """Make predictions using the trained model"""
     try:
-        progress(0, desc="Loading model...")
+        progress(0, desc="📂 Loading model...")
         
         # Run predictions
-        progress(0.5, desc="Making predictions...")
+        progress(0.5, desc="🔮 Making predictions...")
         output_csv = predict.run_predict(
             data_dir=data_dir,
             models_dir=models_dir,
@@ -184,12 +203,12 @@ def make_predictions(data_dir, models_dir, output_path, target_col, progress=gr.
             target_col=target_col,
         )
         
-        progress(0.8, desc="Loading results...")
+        progress(0.8, desc="📊 Loading results...")
         
         # Load and display predictions
         df_preds = pd.read_csv(output_csv)
         
-        progress(1.0, desc="Complete!")
+        progress(1.0, desc="✅ Complete!")
         
         stats = f"""
         ### ✅ Predictions Complete!
@@ -204,80 +223,18 @@ def make_predictions(data_dir, models_dir, output_path, target_col, progress=gr.
         return stats, df_preds.head(20), output_csv
         
     except Exception as e:
-        return f"### ❌ Prediction Error: {str(e)}", None, None
-
-def analyze_predictions(csv_path):
-    """Analyze prediction results"""
-    try:
-        df = pd.read_csv(csv_path)
+        import traceback
+        error_details = traceback.format_exc()
+        return f"""
+        ### ❌ Prediction Error
         
-        # Check if predictions and actual values exist
-        pred_col = 'predicted_House_Price' if 'predicted_House_Price' in df.columns else 'prediction'
-        actual_col = 'House_Price' if 'House_Price' in df.columns else 'actual'
+        **Error**: {str(e)}
         
-        if pred_col not in df.columns or actual_col not in df.columns:
-            return "Columns not found. Available columns: " + ", ".join(df.columns), None, None
-        
-        # Calculate metrics
-        from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-        import numpy as np
-        
-        mae = mean_absolute_error(df[actual_col], df[pred_col])
-        mse = mean_squared_error(df[actual_col], df[pred_col])
-        rmse = np.sqrt(mse)
-        r2 = r2_score(df[actual_col], df[pred_col])
-        
-        # Create visualizations
-        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-        
-        # Scatter plot: Actual vs Predicted
-        axes[0].scatter(df[actual_col], df[pred_col], alpha=0.5)
-        axes[0].plot([df[actual_col].min(), df[actual_col].max()], 
-                     [df[actual_col].min(), df[actual_col].max()], 
-                     'r--', lw=2, label='Perfect Prediction')
-        axes[0].set_xlabel('Actual House Price', fontsize=12)
-        axes[0].set_ylabel('Predicted House Price', fontsize=12)
-        axes[0].set_title('Actual vs Predicted', fontsize=14, fontweight='bold')
-        axes[0].legend()
-        axes[0].grid(True, alpha=0.3)
-        
-        # Residuals plot
-        residuals = df[actual_col] - df[pred_col]
-        axes[1].scatter(df[pred_col], residuals, alpha=0.5)
-        axes[1].axhline(y=0, color='r', linestyle='--', lw=2)
-        axes[1].set_xlabel('Predicted House Price', fontsize=12)
-        axes[1].set_ylabel('Residuals', fontsize=12)
-        axes[1].set_title('Residual Plot', fontsize=14, fontweight='bold')
-        axes[1].grid(True, alpha=0.3)
-        
-        plt.tight_layout()
-        
-        # Distribution comparison
-        fig2, ax = plt.subplots(figsize=(10, 6))
-        ax.hist(df[actual_col], bins=30, alpha=0.5, label='Actual', color='blue')
-        ax.hist(df[pred_col], bins=30, alpha=0.5, label='Predicted', color='orange')
-        ax.set_xlabel('House Price', fontsize=12)
-        ax.set_ylabel('Frequency', fontsize=12)
-        ax.set_title('Distribution: Actual vs Predicted', fontsize=14, fontweight='bold')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
-        plt.tight_layout()
-        
-        metrics_text = f"""
-        ### 📊 Model Performance Metrics
-        
-        - **Mean Absolute Error (MAE)**: ${mae:,.2f}
-        - **Root Mean Squared Error (RMSE)**: ${rmse:,.2f}
-        - **R² Score**: {r2:.4f}
-        - **Mean Squared Error (MSE)**: ${mse:,.2f}
-        
-        {'🎉 Excellent!' if r2 > 0.9 else '✅ Good!' if r2 > 0.7 else '⚠️ Needs improvement'}
-        """
-        
-        return metrics_text, fig, fig2
-        
-    except Exception as e:
-        return f"### ❌ Analysis Error: {str(e)}", None, None
+        **Details**:
+        ```
+        {error_details}
+        ```
+        """, None, None
 
 def load_and_preview_data(file_path):
     """Load and preview dataset"""
@@ -293,13 +250,10 @@ def load_and_preview_data(file_path):
         - **Missing Values**: {df.isnull().sum().sum()}
         """
         
-        # Basic statistics
-        desc = df.describe()
-        
-        return stats, df.head(10), desc
+        return stats, df.head(10)
         
     except Exception as e:
-        return f"### ❌ Error: {str(e)}", None, None
+        return f"### ❌ Error: {str(e)}", None
 
 # Create Gradio Interface
 with gr.Blocks(title="House Price Model Training & Prediction", theme=gr.themes.Soft()) as demo:
@@ -372,7 +326,6 @@ with gr.Blocks(title="House Price Model Training & Prediction", theme=gr.themes.
                     split_plot = gr.Plot(label="Data Split Visualization")
                     preview_stats = gr.Markdown()
                     preview_df = gr.Dataframe(label="Data Preview")
-                    preview_desc = gr.Dataframe(label="Statistical Summary")
             
             train_btn_enable = gr.State(value=False)
             
@@ -398,7 +351,7 @@ with gr.Blocks(title="House Price Model Training & Prediction", theme=gr.themes.
             preview_btn.click(
                 load_and_preview_data,
                 inputs=[data_path_input],
-                outputs=[preview_stats, preview_df, preview_desc]
+                outputs=[preview_stats, preview_df]
             )
         
         # Tab 2: Model Training
@@ -407,7 +360,7 @@ with gr.Blocks(title="House Price Model Training & Prediction", theme=gr.themes.
                 """
                 ### Step 2: Train the Regression Model
                 
-                Configure training parameters and start training. Monitor the process and results.
+                Configure training parameters and start training.
                 """
             )
             
@@ -463,8 +416,9 @@ with gr.Blocks(title="House Price Model Training & Prediction", theme=gr.themes.
                     )
                 
                 with gr.Column(scale=2):
+                    # Loading spinner/message
+                    training_status = gr.Markdown(visible=False)
                     train_output = gr.Markdown()
-                    training_plot = gr.Plot(label="Training Progress", visible=False)
             
             predict_btn_enable = gr.State(value=False)
             
@@ -475,10 +429,15 @@ with gr.Blocks(title="House Price Model Training & Prediction", theme=gr.themes.
                 outputs=[train_start_btn]
             )
             
+            # Two-step process: show message, then train
             train_start_btn.click(
+                show_training_message,
+                inputs=[batch_size_slider, lr_slider, weight_decay_slider, epochs_slider, workers_slider],
+                outputs=[training_status, training_status]
+            ).then(
                 train_model,
                 inputs=[batch_size_slider, lr_slider, weight_decay_slider, epochs_slider, workers_slider],
-                outputs=[train_output, predict_btn_enable, training_plot]
+                outputs=[train_output, predict_btn_enable, training_status]
             )
         
         # Tab 3: Predictions
@@ -539,7 +498,7 @@ with gr.Blocks(title="House Price Model Training & Prediction", theme=gr.themes.
                 make_predictions,
                 inputs=[pred_data_dir, pred_models_dir, pred_output_path, pred_target_col],
                 outputs=[pred_output, pred_df, pred_file_path]
-            )        
+            )
     
     gr.Markdown(
         """
@@ -547,16 +506,14 @@ with gr.Blocks(title="House Price Model Training & Prediction", theme=gr.themes.
         ### 📚 Pipeline Summary
         
         1. **Data Preparation**: Load and preprocess your dataset with custom train/val/test splits
-        2. **Model Training**: Configure hyperparameters and train the regression model
+        2. **Model Training**: Configure hyperparameters and train the model
         3. **Make Predictions**: Generate predictions on test data
         
-        **Tip**: Follow the tabs in order for a complete machine learning workflow!
-        
         ---
-        *Current User*: joaquinorradreahora | *Date*: 2025-10-16 09:12:32
+        *User*: joaquinorradre | *Date*: 2025-10-16 14:49:32 (UTC)
         """
     )
 
 # Launch the interface
 if __name__ == "__main__":
-    demo.launch(share=True, server_name="0.0.0.0", server_port=7861)
+    demo.launch(share=True)

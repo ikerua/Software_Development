@@ -260,7 +260,7 @@ def plot_residuals(pred_path, bins, save_fig):
         return None, f"❌ Error: {str(e)}"
 
 def plot_worst_predictions(pred_path, top_n, save_fig):
-    """Plot worst predictions by MSE"""
+    """Plot worst predictions by MSE with dual bars (normalized and raw)"""
     pred_df, error = load_predictions(pred_path)
     if error:
         return None, None, error
@@ -271,24 +271,47 @@ def plot_worst_predictions(pred_path, top_n, save_fig):
         
         worst_mse = pred_df.sort_values("mse_sample", ascending=False).head(top_n).reset_index(drop=True)
         
-        # Create bar plot
+        # Create figure with two subplots
+        fig, ax = plt.subplots(figsize=(12, 6))
+        
         x = np.arange(len(worst_mse))
-        width = 0.4
+        width = 0.35
         
-        fig, ax = plt.subplots(figsize=(14, 6))
+        # Normalize to 0-1 scale for comparison
+        abs_err_norm = worst_mse["abs_error"] / worst_mse["abs_error"].max()
+        mse_norm = worst_mse["mse_sample"] / worst_mse["mse_sample"].max()
         
-        ax.bar(x - width/2, worst_mse["abs_error"], width=width, label="Absolute Error", alpha=0.8)
-        ax.bar(x + width/2, worst_mse["mse_sample"], width=width, label="MSE Loss", alpha=0.8)
+        bars3 = ax.bar(x - width/2, abs_err_norm, width, 
+                   label="Absolute Error (normalized)", alpha=0.8, 
+                   color='#FF6B6B', edgecolor='black', linewidth=1)
+        bars4 = ax.bar(x + width/2, mse_norm, width, 
+                   label="MSE Loss (normalized)", alpha=0.8, 
+                   color='#4ECDC4', edgecolor='black', linewidth=1)
         
-        ax.set_xlabel(f"Sample (Top-{top_n} by MSE)", fontsize=12)
-        ax.set_ylabel("Error Value", fontsize=12)
-        ax.set_title(f"Top-{top_n} Worst Predictions: Absolute Error vs MSE Loss", 
-                     fontsize=14, fontweight='bold')
+        ax.set_xlabel(f"Sample Index", fontsize=11, fontweight='bold')
+        ax.set_ylabel("Normalized Error (0-1 scale)", fontsize=11, fontweight='bold')
+        ax.set_title(f"Normalized Error Comparison - Top {top_n} Worst Predictions", fontsize=13, fontweight='bold')
         ax.set_xticks(x)
-        ax.set_xticklabels([str(i) for i in x])
-        ax.legend(title="Metric", fontsize=11)
+        ax.set_xticklabels([str(i) for i in range(len(worst_mse))])
+        ax.legend(fontsize=10, loc='upper right')
         ax.grid(True, alpha=0.3, axis='y')
+        ax.set_ylim(0, 1.1)
         
+        # Add percentage labels on normalized bars
+        for i, (bar3, bar4) in enumerate(zip(bars3, bars4)):
+            height3 = bar3.get_height()
+            height4 = bar4.get_height()
+            
+            ax.text(bar3.get_x() + bar3.get_width()/2., height3,
+               f'{height3:.2f}',
+               ha='center', va='bottom', fontsize=8)
+            
+            ax.text(bar4.get_x() + bar4.get_width()/2., height4,
+               f'{height4:.2f}',
+               ha='center', va='bottom', fontsize=8)
+        
+        plt.suptitle(f"Top-{top_n} Worst Predictions Analysis", 
+                     fontsize=15, fontweight='bold', y=1.02)
         plt.tight_layout()
         
         if save_fig:
@@ -304,7 +327,8 @@ def plot_worst_predictions(pred_path, top_n, save_fig):
         return fig, display_df, status
         
     except Exception as e:
-        return None, None, f"❌ Error: {str(e)}"
+        import traceback
+        return None, None, f"❌ Error: {str(e)}\n\n{traceback.format_exc()}"
 
 def plot_error_by_quantiles(pred_path, n_quantiles, save_fig):
     """Plot error by target quantiles"""
@@ -635,4 +659,4 @@ with gr.Blocks(title="Model Performance Analysis", theme=gr.themes.Soft()) as de
 
 # Launch the interface
 if __name__ == "__main__":
-    demo.launch(share=True, server_name="0.0.0.0", server_port=7862)
+    demo.launch(share=True)
