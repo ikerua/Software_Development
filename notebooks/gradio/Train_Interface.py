@@ -1,35 +1,25 @@
-# /// script
-# dependencies = [
-#   "gradio",
-#   "pandas",
-#   "torch",
-#   "pytorch-lightning",
-#   "matplotlib",
-#   "seaborn",
-#   "scikit-learn",
-# ]
-# ///
+"""
+Training Pipeline Module for Gradio Interface
+Handles data preparation, model training, and predictions
+"""
 
 import gradio as gr
 import pandas as pd
 import sys
 import os
 import argparse
-import importlib
 from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
-from datetime import datetime
 
-# Add the parent directory to sys.path
+# Add parent directory to path
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../..')))
 
 import my_project.dataset as ds
 from my_project.modeling import train, predict
 
-# Global variables to store state
+# Global variable
 trained_model_path = None
-training_history = []
 
 def prepare_data(data_path, train_ratio, val_ratio, test_ratio, progress=gr.Progress()):
     """Prepare the dataset for training with custom split ratios"""
@@ -255,265 +245,237 @@ def load_and_preview_data(file_path):
     except Exception as e:
         return f"### ❌ Error: {str(e)}", None
 
-# Create Gradio Interface
-with gr.Blocks(title="House Price Model Training & Prediction", theme=gr.themes.Soft()) as demo:
-    gr.Markdown(
-        """
-        # 🏠 House Price Regression - Model Training & Prediction Pipeline
-        
-        Complete workflow for data preparation, model training, prediction, and analysis.
-        Follow the tabs in order for the full pipeline.
-        """
-    )
+def create_training_tabs():
+    """Create the Training Pipeline tabs - Main export function"""
     
-    with gr.Tabs():
-        # Tab 1: Data Preparation
-        with gr.Tab("📁 1. Data Preparation"):
-            gr.Markdown(
-                """
-                ### Step 1: Load and Prepare Your Dataset
-                
-                Provide the path to your raw dataset CSV file and configure the train/val/test split.
-                """
-            )
-            
-            with gr.Row():
-                with gr.Column(scale=1):
-                    data_path_input = gr.Textbox(
-                        value="../../data/raw/house_price_regression_dataset.csv",
-                        label="Dataset Path",
-                        placeholder="Path to your CSV file"
-                    )
-                    
-                    gr.Markdown("#### 📊 Configure Data Split Ratios")
-                    gr.Markdown("*Adjust the sliders to set train/validation/test proportions (must sum to 1.0)*")
-                    
-                    train_ratio_slider = gr.Slider(
-                        minimum=0.1,
-                        maximum=0.9,
-                        value=0.6,
-                        step=0.05,
-                        label="Training Set Ratio",
-                        info="Proportion of data for training"
-                    )
-                    
-                    val_ratio_slider = gr.Slider(
-                        minimum=0.05,
-                        maximum=0.5,
-                        value=0.2,
-                        step=0.05,
-                        label="Validation Set Ratio",
-                        info="Proportion of data for validation"
-                    )
-                    
-                    test_ratio_slider = gr.Slider(
-                        minimum=0.05,
-                        maximum=0.5,
-                        value=0.2,
-                        step=0.05,
-                        label="Test Set Ratio",
-                        info="Proportion of data for testing (auto-calculated)",
-                        interactive=True
-                    )
-                    
-                    prepare_btn = gr.Button("📊 Prepare Data", variant="primary", size="lg")
-                    
-                    gr.Markdown("#### 👁️ Preview Dataset (Optional)")
-                    preview_btn = gr.Button("Preview Raw Data")
-                
-                with gr.Column(scale=2):
-                    prep_output = gr.Markdown()
-                    split_plot = gr.Plot(label="Data Split Visualization")
-                    preview_stats = gr.Markdown()
-                    preview_df = gr.Dataframe(label="Data Preview")
-            
-            train_btn_enable = gr.State(value=False)
-            
-            # Auto-update test ratio when train or val changes
-            train_ratio_slider.change(
-                update_test_ratio,
-                inputs=[train_ratio_slider, val_ratio_slider],
-                outputs=[test_ratio_slider]
-            )
-            
-            val_ratio_slider.change(
-                update_test_ratio,
-                inputs=[train_ratio_slider, val_ratio_slider],
-                outputs=[test_ratio_slider]
-            )
-            
-            prepare_btn.click(
-                prepare_data,
-                inputs=[data_path_input, train_ratio_slider, val_ratio_slider, test_ratio_slider],
-                outputs=[prep_output, train_btn_enable, split_plot]
-            )
-            
-            preview_btn.click(
-                load_and_preview_data,
-                inputs=[data_path_input],
-                outputs=[preview_stats, preview_df]
-            )
-        
-        # Tab 2: Model Training
-        with gr.Tab("🎯 2. Model Training"):
-            gr.Markdown(
-                """
-                ### Step 2: Train the Regression Model
-                
-                Configure training parameters and start training.
-                """
-            )
-            
-            with gr.Row():
-                with gr.Column(scale=1):
-                    gr.Markdown("#### Training Hyperparameters")
-                    
-                    batch_size_slider = gr.Slider(
-                        minimum=8,
-                        maximum=256,
-                        value=64,
-                        step=8,
-                        label="Batch Size"
-                    )
-                    
-                    lr_slider = gr.Slider(
-                        minimum=1e-5,
-                        maximum=1e-1,
-                        value=1e-3,
-                        step=1e-5,
-                        label="Learning Rate"
-                    )
-                    
-                    weight_decay_slider = gr.Slider(
-                        minimum=0.0,
-                        maximum=0.1,
-                        value=0.0,
-                        step=0.001,
-                        label="Weight Decay (L2 Regularization)"
-                    )
-                    
-                    epochs_slider = gr.Slider(
-                        minimum=1,
-                        maximum=100,
-                        value=20,
-                        step=1,
-                        label="Number of Epochs"
-                    )
-                    
-                    workers_slider = gr.Slider(
-                        minimum=0,
-                        maximum=16,
-                        value=4,
-                        step=1,
-                        label="Number of Workers"
-                    )
-                    
-                    train_start_btn = gr.Button(
-                        "🚀 Start Training",
-                        variant="primary",
-                        size="lg",
-                        interactive=False
-                    )
-                
-                with gr.Column(scale=2):
-                    # Loading spinner/message
-                    training_status = gr.Markdown(visible=False)
-                    train_output = gr.Markdown()
-            
-            predict_btn_enable = gr.State(value=False)
-            
-            # Link train button to preparation state
-            train_btn_enable.change(
-                lambda x: gr.update(interactive=x),
-                inputs=[train_btn_enable],
-                outputs=[train_start_btn]
-            )
-            
-            # Two-step process: show message, then train
-            train_start_btn.click(
-                show_training_message,
-                inputs=[batch_size_slider, lr_slider, weight_decay_slider, epochs_slider, workers_slider],
-                outputs=[training_status, training_status]
-            ).then(
-                train_model,
-                inputs=[batch_size_slider, lr_slider, weight_decay_slider, epochs_slider, workers_slider],
-                outputs=[train_output, predict_btn_enable, training_status]
-            )
-        
-        # Tab 3: Predictions
-        with gr.Tab("🔮 3. Make Predictions"):
-            gr.Markdown(
-                """
-                ### Step 3: Generate Predictions
-                
-                Use the trained model to make predictions on the test dataset.
-                """
-            )
-            
-            with gr.Row():
-                with gr.Column(scale=1):
-                    gr.Markdown("#### Prediction Configuration")
-                    
-                    pred_data_dir = gr.Textbox(
-                        value="data/processed",
-                        label="Processed Data Directory"
-                    )
-                    
-                    pred_models_dir = gr.Textbox(
-                        value="models",
-                        label="Models Directory"
-                    )
-                    
-                    pred_output_path = gr.Textbox(
-                        value="models/test_predictions.csv",
-                        label="Output CSV Path"
-                    )
-                    
-                    pred_target_col = gr.Textbox(
-                        value="House_Price",
-                        label="Target Column Name"
-                    )
-                    
-                    predict_start_btn = gr.Button(
-                        "🔮 Generate Predictions",
-                        variant="primary",
-                        size="lg",
-                        interactive=False
-                    )
-                
-                with gr.Column(scale=2):
-                    pred_output = gr.Markdown()
-                    pred_df = gr.Dataframe(label="Predictions Preview")
-            
-            pred_file_path = gr.State()
-            
-            # Link predict button to training state
-            predict_btn_enable.change(
-                lambda x: gr.update(interactive=x),
-                inputs=[predict_btn_enable],
-                outputs=[predict_start_btn]
-            )
-            
-            predict_start_btn.click(
-                make_predictions,
-                inputs=[pred_data_dir, pred_models_dir, pred_output_path, pred_target_col],
-                outputs=[pred_output, pred_df, pred_file_path]
-            )
+    train_btn_enable = gr.State(value=False)
+    predict_btn_enable = gr.State(value=False)
     
-    gr.Markdown(
-        """
-        ---
-        ### 📚 Pipeline Summary
+    # Tab 1: Data Preparation
+    with gr.Tab("📁 Data Preparation"):
+        gr.Markdown(
+            """
+            ### Step 1: Load and Prepare Your Dataset
+            
+            Provide the path to your raw dataset CSV file and configure the train/val/test split.
+            """
+        )
         
-        1. **Data Preparation**: Load and preprocess your dataset with custom train/val/test splits
-        2. **Model Training**: Configure hyperparameters and train the model
-        3. **Make Predictions**: Generate predictions on test data
+        with gr.Row():
+            with gr.Column(scale=1):
+                data_path_input = gr.Textbox(
+                    value="../../data/raw/house_price_regression_dataset.csv",
+                    label="Dataset Path",
+                    placeholder="Path to your CSV file"
+                )
+                
+                gr.Markdown("#### 📊 Configure Data Split Ratios")
+                gr.Markdown("*Adjust the sliders to set train/validation/test proportions (must sum to 1.0)*")
+                
+                train_ratio_slider = gr.Slider(
+                    minimum=0.1,
+                    maximum=0.9,
+                    value=0.6,
+                    step=0.05,
+                    label="Training Set Ratio",
+                    info="Proportion of data for training"
+                )
+                
+                val_ratio_slider = gr.Slider(
+                    minimum=0.05,
+                    maximum=0.5,
+                    value=0.2,
+                    step=0.05,
+                    label="Validation Set Ratio",
+                    info="Proportion of data for validation"
+                )
+                
+                test_ratio_slider = gr.Slider(
+                    minimum=0.05,
+                    maximum=0.5,
+                    value=0.2,
+                    step=0.05,
+                    label="Test Set Ratio",
+                    info="Proportion of data for testing (auto-calculated)",
+                    interactive=True
+                )
+                
+                prepare_btn = gr.Button("📊 Prepare Data", variant="primary", size="lg")
+                
+                gr.Markdown("#### 👁️ Preview Dataset (Optional)")
+                preview_btn = gr.Button("Preview Raw Data")
+            
+            with gr.Column(scale=2):
+                prep_output = gr.Markdown()
+                split_plot = gr.Plot(label="Data Split Visualization")
+                preview_stats = gr.Markdown()
+                preview_df = gr.Dataframe(label="Data Preview")
         
-        ---
-        *User*: joaquinorradre | *Date*: 2025-10-16 14:49:32 (UTC)
-        """
-    )
-
-# Launch the interface
-if __name__ == "__main__":
-    demo.launch(share=True)
+        # Auto-update test ratio when train or val changes
+        train_ratio_slider.change(
+            update_test_ratio,
+            inputs=[train_ratio_slider, val_ratio_slider],
+            outputs=[test_ratio_slider]
+        )
+        
+        val_ratio_slider.change(
+            update_test_ratio,
+            inputs=[train_ratio_slider, val_ratio_slider],
+            outputs=[test_ratio_slider]
+        )
+        
+        prepare_btn.click(
+            prepare_data,
+            inputs=[data_path_input, train_ratio_slider, val_ratio_slider, test_ratio_slider],
+            outputs=[prep_output, train_btn_enable, split_plot]
+        )
+        
+        preview_btn.click(
+            load_and_preview_data,
+            inputs=[data_path_input],
+            outputs=[preview_stats, preview_df]
+        )
+    
+    # Tab 2: Model Training
+    with gr.Tab("🎯 Model Training"):
+        gr.Markdown(
+            """
+            ### Step 2: Train the Regression Model
+            
+            Configure training parameters and start training.
+            """
+        )
+        
+        with gr.Row():
+            with gr.Column(scale=1):
+                gr.Markdown("#### Training Hyperparameters")
+                
+                batch_size_slider = gr.Slider(
+                    minimum=8,
+                    maximum=256,
+                    value=64,
+                    step=8,
+                    label="Batch Size"
+                )
+                
+                lr_slider = gr.Slider(
+                    minimum=1e-5,
+                    maximum=1e-1,
+                    value=1e-3,
+                    step=1e-5,
+                    label="Learning Rate"
+                )
+                
+                weight_decay_slider = gr.Slider(
+                    minimum=0.0,
+                    maximum=0.1,
+                    value=0.0,
+                    step=0.001,
+                    label="Weight Decay (L2 Regularization)"
+                )
+                
+                epochs_slider = gr.Slider(
+                    minimum=1,
+                    maximum=100,
+                    value=20,
+                    step=1,
+                    label="Number of Epochs"
+                )
+                
+                workers_slider = gr.Slider(
+                    minimum=0,
+                    maximum=16,
+                    value=4,
+                    step=1,
+                    label="Number of Workers"
+                )
+                
+                train_start_btn = gr.Button(
+                    "🚀 Start Training",
+                    variant="primary",
+                    size="lg",
+                    interactive=False
+                )
+            
+            with gr.Column(scale=2):
+                # Loading spinner/message
+                training_status = gr.Markdown(visible=False)
+                train_output = gr.Markdown()
+        
+        # Link train button to preparation state
+        train_btn_enable.change(
+            lambda x: gr.update(interactive=x),
+            inputs=[train_btn_enable],
+            outputs=[train_start_btn]
+        )
+        
+        # Two-step process: show message, then train
+        train_start_btn.click(
+            show_training_message,
+            inputs=[batch_size_slider, lr_slider, weight_decay_slider, epochs_slider, workers_slider],
+            outputs=[training_status, training_status]
+        ).then(
+            train_model,
+            inputs=[batch_size_slider, lr_slider, weight_decay_slider, epochs_slider, workers_slider],
+            outputs=[train_output, predict_btn_enable, training_status]
+        )
+    
+    # Tab 3: Predictions
+    with gr.Tab("🔮 Make Predictions"):
+        gr.Markdown(
+            """
+            ### Step 3: Generate Predictions
+            
+            Use the trained model to make predictions on the test dataset.
+            """
+        )
+        
+        with gr.Row():
+            with gr.Column(scale=1):
+                gr.Markdown("#### Prediction Configuration")
+                
+                pred_data_dir = gr.Textbox(
+                    value="data/processed",
+                    label="Processed Data Directory"
+                )
+                
+                pred_models_dir = gr.Textbox(
+                    value="models",
+                    label="Models Directory"
+                )
+                
+                pred_output_path = gr.Textbox(
+                    value="models/test_predictions.csv",
+                    label="Output CSV Path"
+                )
+                
+                pred_target_col = gr.Textbox(
+                    value="House_Price",
+                    label="Target Column Name"
+                )
+                
+                predict_start_btn = gr.Button(
+                    "🔮 Generate Predictions",
+                    variant="primary",
+                    size="lg",
+                    interactive=False
+                )
+            
+            with gr.Column(scale=2):
+                pred_output = gr.Markdown()
+                pred_df = gr.Dataframe(label="Predictions Preview")
+        
+        pred_file_path = gr.State()
+        
+        # Link predict button to training state
+        predict_btn_enable.change(
+            lambda x: gr.update(interactive=x),
+            inputs=[predict_btn_enable],
+            outputs=[predict_start_btn]
+        )
+        
+        predict_start_btn.click(
+            make_predictions,
+            inputs=[pred_data_dir, pred_models_dir, pred_output_path, pred_target_col],
+            outputs=[pred_output, pred_df, pred_file_path]
+        )

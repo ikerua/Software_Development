@@ -1,13 +1,14 @@
+"""
+Data Visualization Module for Gradio Interface
+Interactive visualizations for house price dataset exploration
+"""
+
 import gradio as gr
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import sys
 import os
-
-# Add the parent directory to sys.path to allow imports from my_project
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '..')))
 
 # Load the dataset
 df = pd.read_csv('../../data/raw/house_price_regression_dataset.csv')
@@ -17,6 +18,11 @@ y = df['House_Price']
 # Get feature names
 features = df.columns.drop('House_Price').tolist()
 categorical_vars = ["Num_Bedrooms", "Num_Bathrooms", "Neighborhood_Quality", "Garage_Size"]
+
+# Color options
+color_options = ["blue", "orange", "green", "red", "purple", "brown", "pink", "gray", "olive", "cyan"]
+palette_options = ["pastel", "deep", "muted", "bright", "dark", "colorblind", "Set2", "Set3", "husl"]
+cmap_options = ["coolwarm", "viridis", "plasma", "RdYlBu", "RdYlGn", "Spectral", "seismic"]
 
 def plot_feature_distribution(feature, bins, kde, color, alpha):
     """Plot histogram with KDE for a selected feature"""
@@ -64,7 +70,6 @@ def plot_violin(variable, palette, split_violin):
     fig, ax = plt.subplots(figsize=(10, 7))
     
     if split_violin and variable in ["Num_Bedrooms", "Num_Bathrooms"]:
-        # Create a binary split based on median for demonstration
         df_temp = df.copy()
         median_val = df_temp[variable].median()
         df_temp['split'] = df_temp[variable] <= median_val
@@ -161,23 +166,6 @@ def plot_regression(x_feature, order, scatter_alpha, line_color, ci):
     plt.tight_layout()
     return fig
 
-def plot_pairplot(selected_features):
-    """Plot pairplot for selected features"""
-    if len(selected_features) == 0:
-        selected_features = ["Square_Footage", "House_Price"]
-    
-    # Ensure House_Price is included
-    if "House_Price" not in selected_features:
-        selected_features.append("House_Price")
-    
-    # Limit to maximum 5 features for performance
-    if len(selected_features) > 5:
-        selected_features = selected_features[:5]
-    
-    fig = sns.pairplot(df[selected_features], diag_kind='kde', plot_kws={'alpha':0.6})
-    fig.fig.suptitle("Pairplot of Selected Features", y=1.02, fontsize=16)
-    return fig.fig
-
 def plot_boxplot(variable, show_outliers, palette):
     """Plot boxplot for a feature"""
     fig, ax = plt.subplots(figsize=(10, 7))
@@ -242,249 +230,144 @@ def filter_data(min_price, max_price, min_sqft, max_sqft):
     
     return stats, fig
 
-# Color palettes
-color_options = ["blue", "orange", "green", "red", "purple", "brown", "pink", "gray", "olive", "cyan"]
-palette_options = ["pastel", "deep", "muted", "bright", "dark", "colorblind", "Set2", "Set3", "husl"]
-cmap_options = ["coolwarm", "viridis", "plasma", "RdYlBu", "RdYlGn", "Spectral", "seismic"]
-
-# Create Gradio Interface
-with gr.Blocks(title="House Price Data Visualization", theme=gr.themes.Soft()) as demo:
-    gr.Markdown(
-        """
-        # 🏠 House Price Dataset - Interactive Data Visualization
-        
-        Explore the house pricing dataset through various interactive visualizations.
-        Use the tabs below to analyze distributions, correlations, and relationships between features.
-        **Adjust parameters to customize your visualizations!**
-        """
-    )
+def create_data_viz_tab():
+    """Create the Data Visualization tab - Main export function"""
     
-    with gr.Tabs():
-        with gr.Tab("📊 Feature Distributions"):
-            gr.Markdown("### Explore individual feature distributions with customizable parameters")
-            with gr.Row():
-                with gr.Column(scale=1):
-                    feature_dropdown = gr.Dropdown(
-                        choices=features + ["House_Price"],
-                        value="House_Price",
-                        label="Select Feature"
-                    )
-                    bins_slider = gr.Slider(
-                        minimum=5,
-                        maximum=100,
-                        value=30,
-                        step=5,
-                        label="Number of Bins"
-                    )
-                    kde_checkbox = gr.Checkbox(
-                        value=True,
-                        label="Show KDE (Kernel Density Estimate)"
-                    )
-                    color_dropdown = gr.Dropdown(
-                        choices=color_options,
-                        value="blue",
-                        label="Color"
-                    )
-                    alpha_slider = gr.Slider(
-                        minimum=0.1,
-                        maximum=1.0,
-                        value=0.7,
-                        step=0.1,
-                        label="Transparency (Alpha)"
-                    )
-                    single_dist_btn = gr.Button("Plot Distribution", variant="primary")
-                    all_dist_btn = gr.Button("Plot All Distributions")
-                with gr.Column(scale=2):
-                    dist_plot = gr.Plot(label="Distribution Plot")
+    with gr.Tab("📊 Data Visualization"):
+        gr.Markdown(
+            """
+            ## Interactive Data Visualization
             
-            single_dist_btn.click(
-                plot_feature_distribution, 
-                inputs=[feature_dropdown, bins_slider, kde_checkbox, color_dropdown, alpha_slider], 
-                outputs=dist_plot
-            )
-            all_dist_btn.click(plot_all_distributions, outputs=dist_plot)
+            Explore the house pricing dataset through various interactive visualizations.
+            """
+        )
+        
+        with gr.Tabs():
+            # Feature Distributions
+            with gr.Tab("📊 Distributions"):
+                gr.Markdown("### Explore individual feature distributions")
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        feature_dropdown = gr.Dropdown(
+                            choices=features + ["House_Price"],
+                            value="House_Price",
+                            label="Select Feature"
+                        )
+                        bins_slider = gr.Slider(5, 100, 30, step=5, label="Number of Bins")
+                        kde_checkbox = gr.Checkbox(value=True, label="Show KDE")
+                        color_dropdown = gr.Dropdown(choices=color_options, value="blue", label="Color")
+                        alpha_slider = gr.Slider(0.1, 1.0, 0.7, step=0.1, label="Transparency")
+                        single_dist_btn = gr.Button("Plot Distribution", variant="primary")
+                        all_dist_btn = gr.Button("Plot All Distributions")
+                    with gr.Column(scale=2):
+                        dist_plot = gr.Plot(label="Distribution Plot")
+                
+                single_dist_btn.click(
+                    plot_feature_distribution, 
+                    inputs=[feature_dropdown, bins_slider, kde_checkbox, color_dropdown, alpha_slider], 
+                    outputs=dist_plot
+                )
+                all_dist_btn.click(plot_all_distributions, outputs=dist_plot)
 
-        with gr.Tab("📦 Box Plots"):
-            gr.Markdown("### Box plots for outlier detection and distribution")
-            with gr.Row():
-                with gr.Column(scale=1):
-                    box_dropdown = gr.Dropdown(
-                        choices=features + ["House_Price"],
-                        value="House_Price",
-                        label="Select Feature"
-                    )
-                    outliers_checkbox = gr.Checkbox(
-                        value=True,
-                        label="Show Outliers"
-                    )
-                    box_palette = gr.Dropdown(
-                        choices=palette_options,
-                        value="Set2",
-                        label="Color Palette"
-                    )
-                    box_btn = gr.Button("Plot Boxplot", variant="primary")
-                with gr.Column(scale=2):
-                    box_plot = gr.Plot(label="Box Plot")
+            # Box Plots
+            with gr.Tab("📦 Box Plots"):
+                gr.Markdown("### Box plots for outlier detection")
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        box_dropdown = gr.Dropdown(choices=features + ["House_Price"], value="House_Price", label="Select Feature")
+                        outliers_checkbox = gr.Checkbox(value=True, label="Show Outliers")
+                        box_palette = gr.Dropdown(choices=palette_options, value="Set2", label="Color Palette")
+                        box_btn = gr.Button("Plot Boxplot", variant="primary")
+                    with gr.Column(scale=2):
+                        box_plot = gr.Plot(label="Box Plot")
+                
+                box_btn.click(plot_boxplot, inputs=[box_dropdown, outliers_checkbox, box_palette], outputs=box_plot)
             
-            box_btn.click(
-                plot_boxplot, 
-                inputs=[box_dropdown, outliers_checkbox, box_palette], 
-                outputs=box_plot
-            )
+            # Violin Plots
+            with gr.Tab("🎻 Violin Plots"):
+                gr.Markdown("### Categorical features vs House Price")
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        cat_dropdown = gr.Dropdown(choices=categorical_vars, value="Num_Bedrooms", label="Categorical Variable")
+                        violin_palette = gr.Dropdown(choices=palette_options, value="pastel", label="Color Palette")
+                        split_checkbox = gr.Checkbox(value=False, label="Comparison Split")
+                        single_violin_btn = gr.Button("Plot Violin", variant="primary")
+                        all_violin_btn = gr.Button("Plot All Violins")
+                    with gr.Column(scale=2):
+                        violin_plot = gr.Plot(label="Violin Plot")
+                
+                single_violin_btn.click(plot_violin, inputs=[cat_dropdown, violin_palette, split_checkbox], outputs=violin_plot)
+                all_violin_btn.click(plot_all_violins, outputs=violin_plot)
+            
+            # Correlation Heatmap
+            with gr.Tab("🔥 Correlations"):
+                gr.Markdown("### Correlation matrix with hierarchical clustering")
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        annot_checkbox = gr.Checkbox(value=True, label="Show Values")
+                        cmap_dropdown = gr.Dropdown(choices=cmap_options, value="coolwarm", label="Color Map")
+                        fmt_dropdown = gr.Dropdown(choices=[".2f", ".1f", ".3f"], value=".2f", label="Format")
+                        heatmap_btn = gr.Button("Generate Heatmap", variant="primary")
+                    with gr.Column(scale=2):
+                        heatmap_plot = gr.Plot(label="Correlation Heatmap")
+                
+                heatmap_btn.click(plot_correlation_heatmap, inputs=[annot_checkbox, cmap_dropdown, fmt_dropdown], outputs=heatmap_plot)
+            
+            # Regression Analysis
+            with gr.Tab("📈 Regression"):
+                gr.Markdown("### Linear/Polynomial regression analysis")
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        reg_dropdown = gr.Dropdown(choices=features, value="Square_Footage", label="Feature")
+                        order_slider = gr.Slider(1, 5, 1, step=1, label="Polynomial Order")
+                        scatter_alpha_slider = gr.Slider(0.1, 1.0, 0.5, step=0.1, label="Point Transparency")
+                        line_color = gr.Dropdown(choices=color_options, value="red", label="Line Color")
+                        ci_slider = gr.Slider(0, 99, 95, step=5, label="Confidence Interval (%)")
+                        reg_btn = gr.Button("Plot Regression", variant="primary")
+                    with gr.Column(scale=2):
+                        reg_plot = gr.Plot(label="Regression Plot")
+                
+                reg_btn.click(plot_regression, inputs=[reg_dropdown, order_slider, scatter_alpha_slider, line_color, ci_slider], outputs=reg_plot)
+            
+            # Data Filter
+            with gr.Tab("🔍 Filter Explorer"):
+                gr.Markdown("### Filter data by price and square footage")
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        price_range = gr.Slider(
+                            minimum=float(df['House_Price'].min()),
+                            maximum=float(df['House_Price'].max()),
+                            value=float(df['House_Price'].min()),
+                            label="Min House Price"
+                        )
+                        price_range_max = gr.Slider(
+                            minimum=float(df['House_Price'].min()),
+                            maximum=float(df['House_Price'].max()),
+                            value=float(df['House_Price'].max()),
+                            label="Max House Price"
+                        )
+                        sqft_range = gr.Slider(
+                            minimum=float(df['Square_Footage'].min()),
+                            maximum=float(df['Square_Footage'].max()),
+                            value=float(df['Square_Footage'].min()),
+                            label="Min Square Footage"
+                        )
+                        sqft_range_max = gr.Slider(
+                            minimum=float(df['Square_Footage'].min()),
+                            maximum=float(df['Square_Footage'].max()),
+                            value=float(df['Square_Footage'].max()),
+                            label="Max Square Footage"
+                        )
+                        filter_btn = gr.Button("Apply Filter", variant="primary")
+                    with gr.Column(scale=2):
+                        filter_stats = gr.Markdown()
+                        filter_plot = gr.Plot(label="Filtered Data")
+                
+                filter_btn.click(filter_data, inputs=[price_range, price_range_max, sqft_range, sqft_range_max], outputs=[filter_stats, filter_plot])
         
-        with gr.Tab("🎻 Violin Plots (Categorical)"):
-            gr.Markdown("### Analyze House Price distribution across categorical features")
-            with gr.Row():
-                with gr.Column(scale=1):
-                    cat_dropdown = gr.Dropdown(
-                        choices=categorical_vars,
-                        value="Num_Bedrooms",
-                        label="Select Categorical Variable"
-                    )
-                    violin_palette = gr.Dropdown(
-                        choices=palette_options,
-                        value="pastel",
-                        label="Color Palette"
-                    )
-                    split_checkbox = gr.Checkbox(
-                        value=False,
-                        label="Show Comparison Split"
-                    )
-                    single_violin_btn = gr.Button("Plot Violin", variant="primary")
-                    all_violin_btn = gr.Button("Plot All Violins")
-                with gr.Column(scale=2):
-                    violin_plot = gr.Plot(label="Violin Plot")
-            
-            single_violin_btn.click(
-                plot_violin, 
-                inputs=[cat_dropdown, violin_palette, split_checkbox], 
-                outputs=violin_plot
-            )
-            all_violin_btn.click(plot_all_violins, outputs=violin_plot)
-        
-        with gr.Tab("🔥 Correlation Heatmap"):
-            gr.Markdown("### Correlation matrix with hierarchical clustering")
-            with gr.Row():
-                with gr.Column(scale=1):
-                    annot_checkbox = gr.Checkbox(
-                        value=True,
-                        label="Show Correlation Values"
-                    )
-                    cmap_dropdown = gr.Dropdown(
-                        choices=cmap_options,
-                        value="coolwarm",
-                        label="Color Map"
-                    )
-                    fmt_dropdown = gr.Dropdown(
-                        choices=[".2f", ".1f", ".3f"],
-                        value=".2f",
-                        label="Number Format"
-                    )
-                    heatmap_btn = gr.Button("Generate Correlation Heatmap", variant="primary")
-                with gr.Column(scale=2):
-                    heatmap_plot = gr.Plot(label="Correlation Heatmap")
-            
-            heatmap_btn.click(
-                plot_correlation_heatmap, 
-                inputs=[annot_checkbox, cmap_dropdown, fmt_dropdown],
-                outputs=heatmap_plot
-            )
-        
-        with gr.Tab("📈 Regression Analysis"):
-            gr.Markdown("### Linear/Polynomial regression between features and House Price")
-            with gr.Row():
-                with gr.Column(scale=1):
-                    reg_dropdown = gr.Dropdown(
-                        choices=features,
-                        value="Square_Footage",
-                        label="Select Feature"
-                    )
-                    order_slider = gr.Slider(
-                        minimum=1,
-                        maximum=5,
-                        value=1,
-                        step=1,
-                        label="Polynomial Order (1=Linear, 2+=Polynomial)"
-                    )
-                    scatter_alpha_slider = gr.Slider(
-                        minimum=0.1,
-                        maximum=1.0,
-                        value=0.5,
-                        step=0.1,
-                        label="Scatter Point Transparency"
-                    )
-                    line_color = gr.Dropdown(
-                        choices=color_options,
-                        value="red",
-                        label="Regression Line Color"
-                    )
-                    ci_slider = gr.Slider(
-                        minimum=0,
-                        maximum=99,
-                        value=95,
-                        step=5,
-                        label="Confidence Interval (%)"
-                    )
-                    reg_btn = gr.Button("Plot Regression", variant="primary")
-                with gr.Column(scale=2):
-                    reg_plot = gr.Plot(label="Regression Plot")
-            
-            reg_btn.click(
-                plot_regression, 
-                inputs=[reg_dropdown, order_slider, scatter_alpha_slider, line_color, ci_slider], 
-                outputs=reg_plot
-            )
-        
-        with gr.Tab("🔍 Data Filter Explorer"):
-            gr.Markdown("### Filter data by price and square footage ranges")
-            with gr.Row():
-                with gr.Column(scale=1):
-                    price_range = gr.Slider(
-                        minimum=float(df['House_Price'].min()),
-                        maximum=float(df['House_Price'].max()),
-                        value=float(df['House_Price'].min()),
-                        label="Minimum House Price"
-                    )
-                    price_range_max = gr.Slider(
-                        minimum=float(df['House_Price'].min()),
-                        maximum=float(df['House_Price'].max()),
-                        value=float(df['House_Price'].max()),
-                        label="Maximum House Price"
-                    )
-                    sqft_range = gr.Slider(
-                        minimum=float(df['Square_Footage'].min()),
-                        maximum=float(df['Square_Footage'].max()),
-                        value=float(df['Square_Footage'].min()),
-                        label="Minimum Square Footage"
-                    )
-                    sqft_range_max = gr.Slider(
-                        minimum=float(df['Square_Footage'].min()),
-                        maximum=float(df['Square_Footage'].max()),
-                        value=float(df['Square_Footage'].max()),
-                        label="Maximum Square Footage"
-                    )
-                    filter_btn = gr.Button("Apply Filter", variant="primary")
-                with gr.Column(scale=2):
-                    filter_stats = gr.Markdown()
-                    filter_plot = gr.Plot(label="Filtered Data Visualization")
-            
-            filter_btn.click(
-                filter_data,
-                inputs=[price_range, price_range_max, sqft_range, sqft_range_max],
-                outputs=[filter_stats, filter_plot]
-            )
-    
-    gr.Markdown(
-        """
-        ---
-        ### 📝 Analysis Notes
-        - **Categorical Features**: Num_Bedrooms, Num_Bathrooms, Neighborhood_Quality, Garage_Size are treated as discrete/categorical
-        - **Strong Correlation**: Square_Footage shows strong positive correlation with House_Price
-        - Use the tabs above to explore different aspects of the dataset
-        - **Tip**: Adjust sliders and parameters to customize visualizations to your needs!
-        """
-    )
-
-# Launch the interface
-if __name__ == "__main__":
-    demo.launch()
+        gr.Markdown(
+            """
+            ---
+            **Tip**: Adjust sliders and parameters to customize visualizations!
+            """
+        )
