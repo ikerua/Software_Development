@@ -1,0 +1,2 @@
+[console_scripts]
+gradio-app = myproject.gradio.gradio_main:main
