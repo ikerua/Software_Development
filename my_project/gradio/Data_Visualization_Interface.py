@@ -8,10 +8,30 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import importlib.resources
 import os
 
 # Load the dataset
-df = pd.read_csv('../../data/raw/house_price_regression_dataset.csv')
+print(f"Current working directory: {os.getcwd()}")
+print(f"Script location: {os.path.abspath(__file__)}")
+# --- ESTO NO ES RECOMENDABLE ---
+
+try:
+    # 1. Encontrar la ruta al paquete "data" instalado en site-packages
+    data_pkg_path = importlib.resources.files("data")
+    
+    # 2. Construir la ruta relativa DENTRO de ese paquete
+    full_path = data_pkg_path / "raw" / "house_price_regression_dataset.csv"
+    
+    # 3. Abrir el archivo
+    df = pd.read_csv(full_path)
+
+except ModuleNotFoundError:
+    print("Error: El 'paquete' data no está instalado.")
+except FileNotFoundError:
+    print(f"Error: No se encontró el archivo en {full_path}")
+# --- NO HAGAS ESTO ---
+# df = pd.read_csv('data/raw/house_price_regression_dataset.csv')
 X = df.drop(columns=['House_Price'])
 y = df['House_Price']
 

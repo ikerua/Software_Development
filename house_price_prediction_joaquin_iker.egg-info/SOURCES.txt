@@ -1,6 +1,8 @@
 LICENSE
+MANIFEST.in
 README.md
 pyproject.toml
+data/raw/house_price_regression_dataset.csv
 house_price_prediction_joaquin_iker.egg-info/PKG-INFO
 house_price_prediction_joaquin_iker.egg-info/SOURCES.txt
 house_price_prediction_joaquin_iker.egg-info/dependency_links.txt

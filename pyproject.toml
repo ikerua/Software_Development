@@ -1,9 +1,9 @@
 [project]
 name = "house_price_prediction_joaquin_iker"
-version = "0.1.1"
+version = "0.1.16"
 description = "Academic project focused on understanding and practicing how to deploy a complete machine learning project, including dependency management, reproducible environments, and best practices in data science."
 readme = "README.md"
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.11"
 authors = [
     { name = "Iker U.", email = "ikerurdirozarroyo@gmail.com" },
     { name = "Joaquin O.", email = "joaquinorradre@gmail.com" }
@@ -19,7 +19,6 @@ dependencies = [
     "numba>=0.61.2",
     "numpy<2",
     "pandas>=2.3.2",
-    "pip>=25.2",
     "pyarrow>=21.0.0",
     "scikit-learn>=1.7.2",
     "seaborn>=0.13.2",
@@ -32,7 +31,7 @@ dependencies = [
 ]
 
 [project.scripts]
-gradio-app = "myproject.gradio.gradio_main:main"
+house-price-prediction-joaquin-iker = "my_project.gradio.gradio_main"
 
 [project.urls]
 "Homepage" = "https://github.com/ikerua/Software_Development#readme"
@@ -44,7 +43,9 @@ dev = [
     "pdoc>=15.0.4",
     "typst>=0.13.7",
 ]
+[tool.setuptools]
+include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["my_project*"]
-exclude = ["data*", "models*", "reports*", "notebooks*"]
+include = ["my_project*", "data*"]
+exclude = ["models*", "reports*", "notebooks*"]

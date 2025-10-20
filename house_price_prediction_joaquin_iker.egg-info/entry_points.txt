@@ -1,2 +1,2 @@
 [console_scripts]
-gradio-app = myproject.gradio.gradio_main:main
+house-price-prediction-joaquin-iker = my_project.gradio.gradio_main
