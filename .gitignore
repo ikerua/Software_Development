@@ -6,3 +6,4 @@ notebooks/lightning_logs
 /my_project/gradio/__pycache__
 /my_project/gradio/.gradio
 /house_price_prediction_joaquin_iker.egg-info
+.gradio/certificate.pem

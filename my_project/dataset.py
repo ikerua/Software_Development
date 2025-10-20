@@ -48,7 +48,7 @@ class HousePricingDataModule(pl.LightningDataModule):
     >>> train_loader = data_module.train_dataloader()
     """
 
-    def __init__(self, data_dir='.', train_ratio=0.6, val_ratio=0.2, test_ratio=0.2, batch_size=64, num_workers=8):
+    def __init__(self, data_dir='.', train_ratio=0.6, val_ratio=0.2, test_ratio=0.2, batch_size=64, num_workers=4):
         """
         Initializes the data module settings.
 
@@ -72,6 +72,7 @@ class HousePricingDataModule(pl.LightningDataModule):
         self.train_ds = None
         self.val_ds = None
         self.test_ds = None
+        self.data_pkg_path = importlib.resources.files("data")
 
 
     def prepare_data(self):
@@ -79,18 +80,20 @@ class HousePricingDataModule(pl.LightningDataModule):
         Preprocess the dataset and save interim and processed files.
         This method is designed to be run only once.
         """
-        data_pkg_path = importlib.resources.files("data")
+        # data_pkg_path = importlib.resources.files("data")
     
-        data_processed_dir = data_pkg_path / "processed"
+        data_processed_dir = self.data_pkg_path / "processed"
         os.makedirs(data_processed_dir, exist_ok=True)
 
         # Si los datos ya están procesados, no hacer nada más.
         if os.path.exists(os.path.join(data_processed_dir, 'train.csv')):
             print("Data already prepared. Skipping preparation step.")
+            print(os.path.join(data_processed_dir, 'train.csv'))
             return
 
         # 1) Cargar dataset crudo
         df = pd.read_csv(self.data_dir)
+        print(f"Raw dataset{self.data_dir}")
         print(f"Raw dataset loaded with shape: {df.shape}")
 
         X, y = df.drop('House_Price', axis=1), df['House_Price']
@@ -152,7 +155,7 @@ class HousePricingDataModule(pl.LightningDataModule):
             If 'fit' or None, loads train and validation sets. If 'test' or None, 
             loads the test set. By default None.
         """
-        data_processed_dir = importlib.resources.files("data") / "processed"
+        data_processed_dir = self.data_pkg_path / "processed"
         # Setup datasets for each stage
         if stage == 'fit' or stage is None:
             self.train_ds = pd.read_csv(data_processed_dir / 'train.csv')

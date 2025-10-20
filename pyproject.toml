@@ -1,6 +1,6 @@
 [project]
 name = "house_price_prediction_joaquin_iker"
-version = "0.1.17"
+version = "1.1.1"
 description = "Academic project focused on understanding and practicing how to deploy a complete machine learning project, including dependency management, reproducible environments, and best practices in data science."
 readme = "README.md"
 requires-python = ">=3.11"
