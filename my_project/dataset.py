@@ -152,14 +152,14 @@ class HousePricingDataModule(pl.LightningDataModule):
             If 'fit' or None, loads train and validation sets. If 'test' or None, 
             loads the test set. By default None.
         """
-        data_processed_dir = importlib.resources.files("data") / "processed" / ""
+        data_processed_dir = importlib.resources.files("data") / "processed"
         # Setup datasets for each stage
         if stage == 'fit' or stage is None:
-            self.train_ds = pd.read_csv(data_processed_dir + 'train.csv')
-            self.val_ds = pd.read_csv(data_processed_dir + 'val.csv')
+            self.train_ds = pd.read_csv(data_processed_dir / 'train.csv')
+            self.val_ds = pd.read_csv(data_processed_dir / 'val.csv')
 
         if stage == 'test' or stage is None:
-            self.test_ds = pd.read_csv(data_processed_dir + 'test.csv')
+            self.test_ds = pd.read_csv(data_processed_dir / 'test.csv')
 
     def train_dataloader(self):
         """
