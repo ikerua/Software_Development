@@ -6,6 +6,7 @@ the dataset.
 
 __docformat__ = "numpy"
 
+import importlib.resources
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
@@ -78,7 +79,9 @@ class HousePricingDataModule(pl.LightningDataModule):
         Preprocess the dataset and save interim and processed files.
         This method is designed to be run only once.
         """
-        data_processed_dir = '../../data/processed/'
+        data_pkg_path = importlib.resources.files("data")
+    
+        data_processed_dir = data_pkg_path / "processed"
         os.makedirs(data_processed_dir, exist_ok=True)
 
         # Si los datos ya están procesados, no hacer nada más.
@@ -149,7 +152,7 @@ class HousePricingDataModule(pl.LightningDataModule):
             If 'fit' or None, loads train and validation sets. If 'test' or None, 
             loads the test set. By default None.
         """
-        data_processed_dir = '../../data/processed/'
+        data_processed_dir = importlib.resources.files("data") / "processed" / ""
         # Setup datasets for each stage
         if stage == 'fit' or stage is None:
             self.train_ds = pd.read_csv(data_processed_dir + 'train.csv')
