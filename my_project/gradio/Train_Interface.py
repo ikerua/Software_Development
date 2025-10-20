@@ -3,6 +3,7 @@ Training Pipeline Module for Gradio Interface
 Handles data preparation, model training, and predictions
 """
 
+import importlib.resources
 import gradio as gr
 import pandas as pd
 import sys
@@ -250,7 +251,11 @@ def create_training_tabs():
     
     train_btn_enable = gr.State(value=False)
     predict_btn_enable = gr.State(value=False)
+    data_pkg_path = importlib.resources.files("data")
     
+    # 2. Construir la ruta relativa DENTRO de ese paquete
+    full_path_raw = data_pkg_path / "raw" / "house_price_regression_dataset.csv"
+
     # Tab 1: Data Preparation
     with gr.Tab("📁 Data Preparation"):
         gr.Markdown(
@@ -264,7 +269,7 @@ def create_training_tabs():
         with gr.Row():
             with gr.Column(scale=1):
                 data_path_input = gr.Textbox(
-                    value="../../data/raw/house_price_regression_dataset.csv",
+                    value=str(full_path_raw),
                     label="Dataset Path",
                     placeholder="Path to your CSV file"
                 )

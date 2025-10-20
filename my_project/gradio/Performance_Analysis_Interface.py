@@ -55,11 +55,8 @@ def load_predictions(pred_path):
         return None, f"❌ Error loading file: {str(e)}"
 
 import gradio as gr
-from textwrap import dedent # Importa dedent
+from textwrap import dedent
 
-# ... (resto de tus funciones)
-
-# En modules/performance_analysis.py
 
 def calculate_metrics(pred_path):
     """Calculate all metrics and display summary"""
@@ -88,7 +85,6 @@ def calculate_metrics(pred_path):
     else:
         rating = "⚠️ Needs Improvement"
     
-    # ⭐ SOLUCIÓN: Construir la cadena línea por línea
     lines = []
     lines.append("### 📊 Model Performance Metrics")
     lines.append(f"**Overall Rating**: {rating}")
@@ -102,10 +98,8 @@ def calculate_metrics(pred_path):
     lines.append(f"- **Predictions File**: `{pred_path}`")
     lines.append("\n---\n")
 
-    # Unir todas las líneas en una sola cadena
     metrics_text = "\n".join(lines)
     
-    # Usar gr.Markdown(value=...) para forzar el renderizado
     return gr.Markdown(value=metrics_text), pred_df.head(20)
 
 
@@ -454,15 +448,15 @@ def create_analysis_tab():
             with gr.Column(scale=1):
                 gr.Markdown("### 📁 File Paths Configuration")
                 pred_path_input = gr.Textbox(
-                    value="../../models/test_predictions.csv",
+                    value="models/test_predictions.csv",
                     label="Predictions CSV Path"
                 )
                 test_path_input = gr.Textbox(
-                    value="../../data/processed/test.csv",
+                    value="data/processed/test.csv",
                     label="Test Data CSV Path"
                 )
                 log_dir_input = gr.Textbox(
-                    value="../../reports/logs/house_price/version_1",
+                    value="reports/logs/house_price/version_1",
                     label="Training Logs Directory"
                 )
         
