@@ -160,11 +160,12 @@ with gr.Blocks(
         **Version**: 1.0.0 | **Framework**: Gradio + PyTorch Lightning
         """
     )
-
-# Launch the application
-if __name__ == "__main__":
+def main():
     demo.launch(
         share=True,
         show_error=True,
         show_api=False
-    )
+        )
+# Launch the application
+if __name__ == "__main__":
+    main()
