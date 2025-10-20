@@ -31,7 +31,7 @@ dependencies = [
 ]
 
 [project.scripts]
-house-price-prediction-joaquin-iker = "my_project.gradio.gradio_main"
+house-price-prediction-joaquin-iker = "my_project.gradio.gradio_main:main"
 
 [project.urls]
 "Homepage" = "https://github.com/ikerua/Software_Development#readme"
