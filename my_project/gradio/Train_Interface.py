@@ -140,13 +140,7 @@ def train_model(batch_size, learning_rate, weight_decay, epochs, num_workers):
         
         # Train the model
         train.main(args)
-        
-        # Find the latest model
-        models_dir = Path("../../models")
-        model_files = list(models_dir.glob("*.ckpt"))
-        if model_files:
-            trained_model_path = str(max(model_files, key=os.path.getctime))
-        
+                
         success_msg = f"""
         ### ✅ Training Complete!
         
@@ -157,7 +151,7 @@ def train_model(batch_size, learning_rate, weight_decay, epochs, num_workers):
         - **Epochs**: {epochs}
         - **Workers**: {num_workers}
         
-        **Model saved to**: `{trained_model_path}`
+        **Model saved**
         
         🎉 Model is ready for predictions!
         """

@@ -72,8 +72,7 @@ with gr.Blocks(
                 """
             )
             
-            with gr.Tabs():
-                create_training_tabs()
+            create_training_tabs()
         
         # Tab 3: Performance Analysis
         create_analysis_tab()

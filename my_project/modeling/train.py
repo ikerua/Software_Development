@@ -112,8 +112,7 @@ def main(args):
     )
     es_cb = EarlyStopping(monitor="val_loss", mode="min", patience=10)
 
-    # CSV logger
-    csv_logger = CSVLogger(save_dir=logs_dir, name="house_price")
+    csv_logger = CSVLogger(save_dir=logs_dir, name="house_price", version=1)
 
     # Trainer
     trainer = pl.Trainer(

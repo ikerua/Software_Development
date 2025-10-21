@@ -2,6 +2,7 @@
 Performance Analysis Module for Gradio Interface
 """
 
+import importlib.resources
 import gradio as gr
 import os
 import math
@@ -102,6 +103,19 @@ def calculate_metrics(pred_path):
     
     return gr.Markdown(value=metrics_text), pred_df.head(20)
 
+def get_package_data_paths():
+    package_base = importlib.resources.files("my_project").parent
+    
+    models_dir = package_base / "models"
+    reports_dir = package_base / "reports"
+    data_dir = package_base / "data"
+    
+    models_dir.mkdir(exist_ok=True)
+    reports_dir.mkdir(exist_ok=True)
+    (reports_dir / "logs" / "house_price").mkdir(parents=True, exist_ok=True)
+    (reports_dir / "figures").mkdir(parents=True, exist_ok=True)
+    
+    return models_dir, reports_dir, data_dir
 
 def plot_predictions_vs_actual(pred_path, save_fig):
     """Scatter plot: Actual vs Predicted"""
@@ -141,7 +155,9 @@ def plot_predictions_vs_actual(pred_path, save_fig):
         plt.tight_layout()
         
         if save_fig:
-            save_path = FIG_DIR / "pred_vs_actual.svg"
+            models_dir, reports_dir, data_dir = get_package_data_paths()
+            save_path = reports_dir / "figures" / "pred_vs_actual.svg"
+            save_path.mkdir(parents=True, exist_ok=True)
             plt.savefig(save_path, dpi=150, bbox_inches="tight")
             status = f"✅ Saved to: {save_path}"
         else:
@@ -182,9 +198,10 @@ def plot_training_validation_loss(log_dir, save_fig):
         plt.tight_layout()
         
         if save_fig:
-            save_path = FIG_DIR / "training_vs_validation_loss.svg"
+            models_dir, reports_dir, data_dir = get_package_data_paths()
+            save_path = reports_dir / "figures" / "training_vs_validation_loss.svg"
+            save_path.mkdir(parents=True, exist_ok=True)
             plt.savefig(save_path, dpi=150, bbox_inches="tight")
-            status = f"✅ Saved to: {save_path}"
         else:
             status = "📊 Plot generated (not saved)"
         
@@ -234,9 +251,10 @@ def plot_residuals(pred_path, bins, save_fig):
         """
         
         if save_fig:
-            save_path = FIG_DIR / "residuals_hist.svg"
+            models_dir, reports_dir, data_dir = get_package_data_paths()
+            save_path = reports_dir / "figures" / "residuals_hist.svg"
+            save_path.mkdir(parents=True, exist_ok=True)
             plt.savefig(save_path, dpi=150, bbox_inches="tight")
-            status = f"✅ Saved to: {save_path}\n\n{stats_text}"
         else:
             status = f"📊 Plot generated (not saved)\n\n{stats_text}"
         
@@ -295,9 +313,10 @@ def plot_worst_predictions(pred_path, top_n, save_fig):
         plt.tight_layout()
         
         if save_fig:
-            save_path = FIG_DIR / "absolute_error_vs_mse.svg"
+            models_dir, reports_dir, data_dir = get_package_data_paths()
+            save_path = reports_dir / "figures" / "absolute_error_vs_mse.svg"
+            save_path.mkdir(parents=True, exist_ok=True)
             plt.savefig(save_path, dpi=150, bbox_inches="tight")
-            status = f"✅ Saved to: {save_path}"
         else:
             status = "📊 Plot generated (not saved)"
         
@@ -343,9 +362,10 @@ def plot_error_by_quantiles(pred_path, n_quantiles, save_fig):
         plt.tight_layout()
         
         if save_fig:
-            save_path = FIG_DIR / "error_by_target_quantiles.svg"
+            models_dir, reports_dir, data_dir = get_package_data_paths()
+            save_path = reports_dir / "figures" / "error_by_target_quantiles.svg"
+            save_path.mkdir(parents=True, exist_ok=True)
             plt.savefig(save_path, dpi=150, bbox_inches="tight")
-            status = f"✅ Saved to: {save_path}"
         else:
             status = "📊 Plot generated (not saved)"
         
@@ -414,9 +434,10 @@ def plot_error_vs_features(pred_path, test_path, top_n, save_fig):
         plt.tight_layout()
         
         if save_fig:
-            save_path = FIG_DIR / "abs_error_vs_top_features.svg"
+            models_dir, reports_dir, data_dir = get_package_data_paths()
+            save_path = reports_dir / "figures" / "error_vs_top_features.svg"
+            save_path.mkdir(parents=True, exist_ok=True)
             plt.savefig(save_path, dpi=150, bbox_inches="tight")
-            status = f"✅ Saved to: {save_path}"
         else:
             status = "📊 Plot generated (not saved)"
         
@@ -443,20 +464,29 @@ def create_analysis_tab():
             Comprehensive analysis of model predictions with interactive visualizations.
             """
         )
-        
+        models_dir, reports_dir, data_dir = get_package_data_paths()
+
+        full_path_models = models_dir / "test_predictions.csv"
+
+        data_processed_dir = importlib.resources.files("data") / "processed"
+        full_path_test = data_processed_dir / "test.csv"
+
+        logs_processed_dir = reports_dir / "logs" / "house_price" / "version_1"
+        logs_processed_dir.mkdir(parents=True, exist_ok=True)
+
         with gr.Row():
             with gr.Column(scale=1):
                 gr.Markdown("### 📁 File Paths Configuration")
                 pred_path_input = gr.Textbox(
-                    value="models/test_predictions.csv",
+                    value=full_path_models,
                     label="Predictions CSV Path"
                 )
                 test_path_input = gr.Textbox(
-                    value="data/processed/test.csv",
+                    value=full_path_test,
                     label="Test Data CSV Path"
                 )
                 log_dir_input = gr.Textbox(
-                    value="reports/logs/house_price/version_1",
+                    value=logs_processed_dir,
                     label="Training Logs Directory"
                 )
         
