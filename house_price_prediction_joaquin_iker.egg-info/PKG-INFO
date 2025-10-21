@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: house_price_prediction_joaquin_iker
-Version: 1.1.1
+Version: 1.1.2
 Summary: Academic project focused on understanding and practicing how to deploy a complete machine learning project, including dependency management, reproducible environments, and best practices in data science.
 Author-email: "Iker U." <ikerurdirozarroyo@gmail.com>, "Joaquin O." <joaquinorradre@gmail.com>
 License: MIT License
