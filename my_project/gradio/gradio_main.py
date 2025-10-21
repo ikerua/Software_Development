@@ -137,26 +137,6 @@ with gr.Blocks(
            - Analyze worst predictions to find patterns
            - Check residuals for model assumptions
         
-        ---
-        
-        ### 🔧 Technical Details
-        
-        **Dataset**: House Price Regression Dataset  
-        **Model**: PyTorch Lightning Neural Network  
-        **Features**: Square Footage, Bedrooms, Bathrooms, Year Built, etc.  
-        **Target**: House Price (continuous)  
-        
-        **Default Paths**:
-        - Raw Data: `data/raw/house_price_regression_dataset.csv`
-        - Processed: `data/processed/`
-        - Models: `models/`
-        - Predictions: `models/test_predictions.csv`
-        - Figures: `reports/figures/`
-        
-        ---
-        
-        **User**: `joaquinorradre` | **Date**: `2025-10-16 15:29:02 UTC`  
-        **Version**: 1.0.0 | **Framework**: Gradio + PyTorch Lightning
         """
     )
 def main():

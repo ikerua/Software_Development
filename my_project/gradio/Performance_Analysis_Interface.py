@@ -117,7 +117,7 @@ def get_package_data_paths():
     
     return models_dir, reports_dir, data_dir
 
-def plot_predictions_vs_actual(pred_path, save_fig):
+def plot_predictions_vs_actual(pred_path):
     """Scatter plot: Actual vs Predicted"""
     pred_df, error = load_predictions(pred_path)
     if error:
@@ -153,22 +153,15 @@ def plot_predictions_vs_actual(pred_path, save_fig):
         ax.grid(True, alpha=0.3)
         
         plt.tight_layout()
-        
-        if save_fig:
-            models_dir, reports_dir, data_dir = get_package_data_paths()
-            save_path = reports_dir / "figures" / "pred_vs_actual.svg"
-            save_path.mkdir(parents=True, exist_ok=True)
-            plt.savefig(save_path, dpi=150, bbox_inches="tight")
-            status = f"✅ Saved to: {save_path}"
-        else:
-            status = "📊 Plot generated (not saved)"
+    
+        status = "📊 Plot generated"
         
         return fig, status
         
     except Exception as e:
         return None, f"❌ Error: {str(e)}"
 
-def plot_training_validation_loss(log_dir, save_fig):
+def plot_training_validation_loss(log_dir):
     """Plot training and validation loss curves"""
     try:
         metrics_path = Path(log_dir) / "metrics.csv"
@@ -197,20 +190,14 @@ def plot_training_validation_loss(log_dir, save_fig):
         
         plt.tight_layout()
         
-        if save_fig:
-            models_dir, reports_dir, data_dir = get_package_data_paths()
-            save_path = reports_dir / "figures" / "training_vs_validation_loss.svg"
-            save_path.mkdir(parents=True, exist_ok=True)
-            plt.savefig(save_path, dpi=150, bbox_inches="tight")
-        else:
-            status = "📊 Plot generated (not saved)"
+        status = "📊 Plot generated"
         
         return fig, status
         
     except Exception as e:
         return None, f"❌ Error: {str(e)}"
 
-def plot_residuals(pred_path, bins, save_fig):
+def plot_residuals(pred_path, bins):
     """Plot residuals distribution"""
     pred_df, error = load_predictions(pred_path)
     if error:
@@ -250,20 +237,14 @@ def plot_residuals(pred_path, bins, save_fig):
         - Max: {resid.max():.4f}
         """
         
-        if save_fig:
-            models_dir, reports_dir, data_dir = get_package_data_paths()
-            save_path = reports_dir / "figures" / "residuals_hist.svg"
-            save_path.mkdir(parents=True, exist_ok=True)
-            plt.savefig(save_path, dpi=150, bbox_inches="tight")
-        else:
-            status = f"📊 Plot generated (not saved)\n\n{stats_text}"
+        status = f"📊 Plot generated"
         
         return fig, status
         
     except Exception as e:
         return None, f"❌ Error: {str(e)}"
 
-def plot_worst_predictions(pred_path, top_n, save_fig):
+def plot_worst_predictions(pred_path, top_n):
     """Plot worst predictions by MSE with dual bars"""
     pred_df, error = load_predictions(pred_path)
     if error:
@@ -312,13 +293,7 @@ def plot_worst_predictions(pred_path, top_n, save_fig):
         
         plt.tight_layout()
         
-        if save_fig:
-            models_dir, reports_dir, data_dir = get_package_data_paths()
-            save_path = reports_dir / "figures" / "absolute_error_vs_mse.svg"
-            save_path.mkdir(parents=True, exist_ok=True)
-            plt.savefig(save_path, dpi=150, bbox_inches="tight")
-        else:
-            status = "📊 Plot generated (not saved)"
+        status = "📊 Plot generated"
         
         display_df = worst_mse[["y_true", "prediction", "abs_error", "mse_sample"]].round(4)
         
@@ -328,7 +303,7 @@ def plot_worst_predictions(pred_path, top_n, save_fig):
         import traceback
         return None, None, f"❌ Error: {str(e)}\n\n{traceback.format_exc()}"
 
-def plot_error_by_quantiles(pred_path, n_quantiles, save_fig):
+def plot_error_by_quantiles(pred_path, n_quantiles):
     """Plot error by target quantiles"""
     pred_df, error = load_predictions(pred_path)
     if error:
@@ -361,20 +336,14 @@ def plot_error_by_quantiles(pred_path, n_quantiles, save_fig):
         
         plt.tight_layout()
         
-        if save_fig:
-            models_dir, reports_dir, data_dir = get_package_data_paths()
-            save_path = reports_dir / "figures" / "error_by_target_quantiles.svg"
-            save_path.mkdir(parents=True, exist_ok=True)
-            plt.savefig(save_path, dpi=150, bbox_inches="tight")
-        else:
-            status = "📊 Plot generated (not saved)"
+        status = "📊 Plot generated"
         
         return fig, grouped, status
         
     except Exception as e:
         return None, None, f"❌ Error: {str(e)}"
 
-def plot_error_vs_features(pred_path, test_path, top_n, save_fig):
+def plot_error_vs_features(pred_path, test_path, top_n):
     """Plot error vs top correlated features"""
     pred_df, error = load_predictions(pred_path)
     if error:
@@ -433,13 +402,7 @@ def plot_error_vs_features(pred_path, test_path, top_n, save_fig):
         
         plt.tight_layout()
         
-        if save_fig:
-            models_dir, reports_dir, data_dir = get_package_data_paths()
-            save_path = reports_dir / "figures" / "error_vs_top_features.svg"
-            save_path.mkdir(parents=True, exist_ok=True)
-            plt.savefig(save_path, dpi=150, bbox_inches="tight")
-        else:
-            status = "📊 Plot generated (not saved)"
+        status = "📊 Plot generated"
         
         # Return correlation data
         corr_df = pd.DataFrame({
@@ -506,7 +469,6 @@ def create_analysis_tab():
             # Tab 2: Predictions vs Actual
             with gr.Tab("🎯 Predictions vs Actual"):
                 with gr.Row():
-                    save_pred_actual = gr.Checkbox(value=True, label="Save figure")
                     plot_pred_actual_btn = gr.Button("📈 Generate Plot", variant="primary")
                 
                 pred_actual_status = gr.Markdown()
@@ -514,14 +476,13 @@ def create_analysis_tab():
                 
                 plot_pred_actual_btn.click(
                     plot_predictions_vs_actual,
-                    inputs=[pred_path_input, save_pred_actual],
+                    inputs=[pred_path_input],
                     outputs=[pred_actual_plot, pred_actual_status]
                 )
             
             # Tab 3: Training Loss
             with gr.Tab("📉 Training Loss"):
                 with gr.Row():
-                    save_loss = gr.Checkbox(value=True, label="Save figure")
                     plot_loss_btn = gr.Button("📈 Generate Plot", variant="primary")
                 
                 loss_status = gr.Markdown()
@@ -529,7 +490,7 @@ def create_analysis_tab():
                 
                 plot_loss_btn.click(
                     plot_training_validation_loss,
-                    inputs=[log_dir_input, save_loss],
+                    inputs=[log_dir_input],
                     outputs=[loss_plot, loss_status]
                 )
             
@@ -537,7 +498,6 @@ def create_analysis_tab():
             with gr.Tab("📐 Residuals"):
                 with gr.Row():
                     residual_bins = gr.Slider(10, 100, 40, step=5, label="Bins")
-                    save_residuals = gr.Checkbox(value=True, label="Save figure")
                 
                 plot_residuals_btn = gr.Button("📈 Generate Plot", variant="primary")
                 residuals_status = gr.Markdown()
@@ -545,7 +505,7 @@ def create_analysis_tab():
                 
                 plot_residuals_btn.click(
                     plot_residuals,
-                    inputs=[pred_path_input, residual_bins, save_residuals],
+                    inputs=[pred_path_input, residual_bins],
                     outputs=[residuals_plot, residuals_status]
                 )
             
@@ -553,7 +513,6 @@ def create_analysis_tab():
             with gr.Tab("⚠️ Worst Predictions"):
                 with gr.Row():
                     worst_n = gr.Slider(5, 50, 20, step=5, label="Top N Samples")
-                    save_worst = gr.Checkbox(value=True, label="Save figure")
                 
                 plot_worst_btn = gr.Button("📈 Generate Plot", variant="primary")
                 worst_status = gr.Markdown()
@@ -562,7 +521,7 @@ def create_analysis_tab():
                 
                 plot_worst_btn.click(
                     plot_worst_predictions,
-                    inputs=[pred_path_input, worst_n, save_worst],
+                    inputs=[pred_path_input, worst_n],
                     outputs=[worst_plot, worst_df, worst_status]
                 )
             
@@ -570,7 +529,6 @@ def create_analysis_tab():
             with gr.Tab("📊 Error by Quantiles"):
                 with gr.Row():
                     n_quantiles = gr.Slider(3, 10, 5, step=1, label="Number of Quantiles")
-                    save_quantiles = gr.Checkbox(value=True, label="Save figure")
                 
                 plot_quantiles_btn = gr.Button("📈 Generate Plot", variant="primary")
                 quantiles_status = gr.Markdown()
@@ -579,16 +537,14 @@ def create_analysis_tab():
                 
                 plot_quantiles_btn.click(
                     plot_error_by_quantiles,
-                    inputs=[pred_path_input, n_quantiles, save_quantiles],
+                    inputs=[pred_path_input, n_quantiles],
                     outputs=[quantiles_plot, quantiles_df, quantiles_status]
                 )
             
             # Tab 7: Error vs Features
             with gr.Tab("🔍 Error vs Features"):
                 with gr.Row():
-                    top_features_n = gr.Slider(3, 9, 6, step=1, label="Top N Features")
-                    save_features = gr.Checkbox(value=True, label="Save figure")
-                
+                    top_features_n = gr.Slider(3, 9, 6, step=1, label="Top N Features")                
                 plot_features_btn = gr.Button("📈 Generate Plot", variant="primary")
                 features_status = gr.Markdown()
                 features_plot = gr.Plot()
@@ -596,13 +552,7 @@ def create_analysis_tab():
                 
                 plot_features_btn.click(
                     plot_error_vs_features,
-                    inputs=[pred_path_input, test_path_input, top_features_n, save_features],
+                    inputs=[pred_path_input, test_path_input, top_features_n],
                     outputs=[features_plot, features_corr, features_status]
                 )
         
-        gr.Markdown(
-            """
-            ---
-            **Note**: All figures can be saved as SVG for high-quality reports.
-            """
-        )
