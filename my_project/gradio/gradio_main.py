@@ -1,35 +1,31 @@
-# /// script
-# dependencies = [
-#   "gradio",
-#   "pandas",
-#   "torch",
-#   "pytorch-lightning",
-#   "matplotlib",
-#   "seaborn",
-#   "scikit-learn",
-#   "numpy",
-# ]
-# ///
-
 """
 House Price ML Pipeline - Complete Gradio Interface
-Combines Data Visualization, Training Pipeline, and Performance Analysis
+
+This module provides a comprehensive web interface for an end-to-end machine learning pipeline
+for house price prediction. It integrates three main components:
+
+1. **Data Visualization**: Interactive exploration of housing data through various plot types
+   (distributions, correlations, scatter plots, box plots, violin plots, regression analysis)
+   
+2. **Training Pipeline**: Complete workflow for data preparation, model training, and prediction
+   generation with configurable hyperparameters and train/validation/test splitting
+   
+3. **Performance Analysis**: Detailed model evaluation including metrics calculation, residual
+   analysis, error distribution, and feature-wise error correlation
 """
+__docformat__ = "numpy"
 
 import gradio as gr
 import sys
 import os
 
-# Add paths
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../..')))
 sys.path.append('./modules')
 
-# Import module functions
 from my_project.gradio.Data_Visualization_Interface import create_data_viz_tab
 from my_project.gradio.Train_Interface import create_training_tabs
 from my_project.gradio.Performance_Analysis_Interface import create_analysis_tab
 
-# Create the main interface
 with gr.Blocks(
     title="House Price ML Pipeline - Complete",
     theme=gr.themes.Soft(),
@@ -41,7 +37,6 @@ with gr.Blocks(
     """
 ) as demo:
     
-    # Header
     gr.Markdown(
         """
         # 🏠 House Price Regression - Complete ML Pipeline
@@ -56,10 +51,8 @@ with gr.Blocks(
     
     with gr.Tabs() as main_tabs:
         
-        # Tab 1: Data Visualization
         create_data_viz_tab()
         
-        # Tab 2: ML Pipeline (Data Prep + Training + Predictions)
         with gr.Tab("🎯 ML Pipeline"):
             gr.Markdown(
                 """
@@ -74,10 +67,8 @@ with gr.Blocks(
             
             create_training_tabs()
         
-        # Tab 3: Performance Analysis
         create_analysis_tab()
     
-    # Footer
     gr.Markdown(
         """
         ---
@@ -139,12 +130,18 @@ with gr.Blocks(
         
         """
     )
+
 def main():
+    """
+    Launch the Gradio web interface.
+    
+    Initializes and starts the Gradio server with the complete ML pipeline interface.
+    The interface will be accessible through a web browser at the provided local URL.
+    """
     demo.launch(
-        share=True,
         show_error=True,
         show_api=False
         )
-# Launch the application
+    
 if __name__ == "__main__":
     main()

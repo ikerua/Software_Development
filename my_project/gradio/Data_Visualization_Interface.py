@@ -1,7 +1,12 @@
 """
 Data Visualization Module for Gradio Interface
-Interactive visualizations for house price dataset exploration
+
+This module provides interactive visualizations for exploring house price datasets.
+It includes various plot types (distributions, violin plots, box plots, correlation
+heatmaps, regression plots) and data filtering capabilities, all integrated with
+a Gradio interface.
 """
+__docformat__ = "numpy"
 
 import gradio as gr
 import seaborn as sns
@@ -11,41 +16,57 @@ import numpy as np
 import importlib.resources
 import os
 
-# Load the dataset
-print(f"Current working directory: {os.getcwd()}")
-print(f"Script location: {os.path.abspath(__file__)}")
-# --- ESTO NO ES RECOMENDABLE ---
 
 try:
-    # 1. Encontrar la ruta al paquete "data" instalado en site-packages
     data_pkg_path = importlib.resources.files("data")
     
-    # 2. Construir la ruta relativa DENTRO de ese paquete
     full_path = data_pkg_path / "raw" / "house_price_regression_dataset.csv"
     
-    # 3. Abrir el archivo
     df = pd.read_csv(full_path)
 
 except ModuleNotFoundError:
     print("Error: El 'paquete' data no está instalado.")
 except FileNotFoundError:
     print(f"Error: No se encontró el archivo en {full_path}")
-# --- NO HAGAS ESTO ---
-# df = pd.read_csv('data/raw/house_price_regression_dataset.csv')
+
 X = df.drop(columns=['House_Price'])
 y = df['House_Price']
 
-# Get feature names
 features = df.columns.drop('House_Price').tolist()
 categorical_vars = ["Num_Bedrooms", "Num_Bathrooms", "Neighborhood_Quality", "Garage_Size"]
 
-# Color options
 color_options = ["blue", "orange", "green", "red", "purple", "brown", "pink", "gray", "olive", "cyan"]
 palette_options = ["pastel", "deep", "muted", "bright", "dark", "colorblind", "Set2", "Set3", "husl"]
 cmap_options = ["coolwarm", "viridis", "plasma", "RdYlBu", "RdYlGn", "Spectral", "seismic"]
 
+
 def plot_feature_distribution(feature, bins, kde, color, alpha):
-    """Plot histogram with KDE for a selected feature"""
+    """
+    Plot histogram with optional KDE for a selected feature.
+    
+    Parameters
+    ----------
+    feature : str
+        Name of the feature to visualize. Can be any column from the dataset
+        including 'House_Price'.
+    bins : int
+        Number of bins for the histogram.
+    kde : bool
+        Whether to overlay a Kernel Density Estimate curve.
+    color : str
+        Color for the histogram bars.
+    alpha : float
+        Transparency level for the histogram (0.0 to 1.0).
+    
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The generated matplotlib figure containing the distribution plot.
+    
+    Examples
+    --------
+    >>> fig = plot_feature_distribution("House_Price", bins=30, kde=True, color="blue", alpha=0.7)
+    """
     fig, ax = plt.subplots(figsize=(10, 6))
     sns.set_theme(style="darkgrid")
     
@@ -60,8 +81,23 @@ def plot_feature_distribution(feature, bins, kde, color, alpha):
     plt.tight_layout()
     return fig
 
+
 def plot_all_distributions():
-    """Plot all feature distributions in a grid"""
+    """
+    Plot all feature distributions in a grid layout.
+    
+    Creates a 3x3 grid showing histograms with KDE for all features,
+    with the target variable (House_Price) displayed separately at the bottom.
+    
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The generated matplotlib figure containing all distribution plots.
+    
+    Examples
+    --------
+    >>> fig = plot_all_distributions()
+    """
     fig = plt.figure(figsize=(20, 25))
     sns.set_theme(style="darkgrid")
     gs = plt.GridSpec(3, 3, figure=fig)
@@ -85,8 +121,35 @@ def plot_all_distributions():
     plt.tight_layout()
     return fig
 
+
 def plot_violin(variable, palette, split_violin):
-    """Plot violin plot for categorical variables vs House Price"""
+    """
+    Plot violin plot for categorical variables versus House Price.
+    
+    Violin plots show the distribution of house prices across different
+    categories of the selected variable. Optionally splits the violins
+    for comparison (e.g., above/below median).
+    
+    Parameters
+    ----------
+    variable : str
+        Name of the categorical variable to plot. Must be one of the
+        categorical variables defined in `categorical_vars`.
+    palette : str
+        Seaborn color palette name for the plot.
+    split_violin : bool
+        If True and variable is "Num_Bedrooms" or "Num_Bathrooms",
+        splits the violin plot by median value for comparison.
+    
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The generated matplotlib figure containing the violin plot.
+    
+    Examples
+    --------
+    >>> fig = plot_violin("Num_Bedrooms", palette="pastel", split_violin=False)
+    """
     fig, ax = plt.subplots(figsize=(10, 7))
     
     if split_violin and variable in ["Num_Bedrooms", "Num_Bathrooms"]:
@@ -125,8 +188,23 @@ def plot_violin(variable, palette, split_violin):
     plt.tight_layout()
     return fig
 
+
 def plot_all_violins():
-    """Plot all violin plots in a grid"""
+    """
+    Plot all categorical variables as violin plots in a 2x2 grid.
+    
+    Creates a comprehensive view of how house prices distribute across
+    all categorical features in the dataset.
+    
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The generated matplotlib figure containing all violin plots.
+    
+    Examples
+    --------
+    >>> fig = plot_all_violins()
+    """
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     axes = axes.flatten()
 
@@ -149,11 +227,34 @@ def plot_all_violins():
     plt.tight_layout()
     return fig
 
+
 def plot_correlation_heatmap(annot, cmap, fmt):
-    """Plot correlation heatmap with hierarchical clustering"""
+    """
+    Plot correlation heatmap with hierarchical clustering.
+    
+    Computes the correlation matrix for all features and reorders them
+    using hierarchical clustering to group similar variables together.
+    
+    Parameters
+    ----------
+    annot : bool
+        Whether to display correlation values on the heatmap cells.
+    cmap : str
+        Matplotlib colormap name for the heatmap.
+    fmt : str
+        Format string for the annotation values (e.g., ".2f" for 2 decimals).
+    
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The generated matplotlib figure containing the correlation heatmap.
+    
+    Examples
+    --------
+    >>> fig = plot_correlation_heatmap(annot=True, cmap="coolwarm", fmt=".2f")
+    """
     corr_matrix = df.corr()
     
-    # Use clustermap to get ordering
     cg = sns.clustermap(corr_matrix, cmap=cmap, linewidths=0.5, figsize=(10, 8))
     ordered_indices = cg.dendrogram_row.reordered_ind
     plt.close()
@@ -169,8 +270,36 @@ def plot_correlation_heatmap(annot, cmap, fmt):
     plt.tight_layout()
     return fig
 
+
 def plot_regression(x_feature, order, scatter_alpha, line_color, ci):
-    """Plot regression plot between selected feature and House Price"""
+    """
+    Plot regression plot between a selected feature and House Price.
+    
+    Displays a scatter plot with an overlaid regression line. Supports
+    polynomial regression of varying orders and confidence intervals.
+    
+    Parameters
+    ----------
+    x_feature : str
+        Name of the feature to use as the independent variable.
+    order : int
+        Polynomial order for the regression (1 for linear, 2+ for polynomial).
+    scatter_alpha : float
+        Transparency level for scatter points (0.0 to 1.0).
+    line_color : str
+        Color for the regression line.
+    ci : int
+        Confidence interval percentage (0-99). Set to 0 to disable.
+    
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The generated matplotlib figure containing the regression plot.
+    
+    Examples
+    --------
+    >>> fig = plot_regression("Square_Footage", order=1, scatter_alpha=0.5, line_color="red", ci=95)
+    """
     fig, ax = plt.subplots(figsize=(10, 7))
     sns.regplot(
         data=df, 
@@ -186,8 +315,32 @@ def plot_regression(x_feature, order, scatter_alpha, line_color, ci):
     plt.tight_layout()
     return fig
 
+
 def plot_boxplot(variable, show_outliers, palette):
-    """Plot boxplot for a feature"""
+    """
+    Plot boxplot for outlier detection and distribution analysis.
+    
+    For categorical variables, displays house price distributions across
+    categories. For continuous variables, shows the overall distribution.
+    
+    Parameters
+    ----------
+    variable : str
+        Name of the variable to visualize. Can be any feature or 'House_Price'.
+    show_outliers : bool
+        Whether to display outlier points on the boxplot.
+    palette : str
+        Seaborn color palette name for categorical boxplots.
+    
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The generated matplotlib figure containing the boxplot.
+    
+    Examples
+    --------
+    >>> fig = plot_boxplot("Num_Bedrooms", show_outliers=True, palette="Set2")
+    """
     fig, ax = plt.subplots(figsize=(10, 7))
     
     if variable in categorical_vars:
@@ -215,8 +368,36 @@ def plot_boxplot(variable, show_outliers, palette):
     plt.tight_layout()
     return fig
 
+
 def filter_data(min_price, max_price, min_sqft, max_sqft):
-    """Filter dataset and return statistics"""
+    """
+    Filter dataset by price and square footage ranges.
+    
+    Filters the house price dataset based on specified ranges and generates
+    summary statistics along with a scatter plot of the filtered data.
+    
+    Parameters
+    ----------
+    min_price : float
+        Minimum house price threshold.
+    max_price : float
+        Maximum house price threshold.
+    min_sqft : float
+        Minimum square footage threshold.
+    max_sqft : float
+        Maximum square footage threshold.
+    
+    Returns
+    -------
+    str
+        Markdown-formatted string containing statistics about filtered data.
+    matplotlib.figure.Figure
+        Scatter plot of filtered data showing Price vs Square Footage.
+    
+    Examples
+    --------
+    >>> stats, fig = filter_data(min_price=100000, max_price=500000, min_sqft=1000, max_sqft=3000)
+    """
     filtered = df[
         (df['House_Price'] >= min_price) & 
         (df['House_Price'] <= max_price) &
@@ -250,8 +431,26 @@ def filter_data(min_price, max_price, min_sqft, max_sqft):
     
     return stats, fig
 
+
 def create_data_viz_tab():
-    """Create the Data Visualization tab - Main export function"""
+    """
+    Create the Data Visualization tab for the Gradio interface.
+    
+    This is the main export function that constructs the complete visualization
+    tab with all interactive components including distributions, box plots,
+    violin plots, correlation heatmaps, regression analysis, and data filtering.
+    
+    Returns
+    -------
+    None
+        Creates Gradio UI components within the context manager.
+    
+    Examples
+    --------
+    From a Gradio app:
+    >>> with gr.Blocks() as demo:
+    >>>     create_data_viz_tab()
+    """
     
     with gr.Tab("📊 Data Visualization"):
         gr.Markdown(
