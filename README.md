@@ -31,10 +31,13 @@ The dataset is already present in our repository in the following path:
 **Installation**
 
 Binary installers for the latest released version are available at the [Test Python Package Index (Test PyPI)](https://test.pypi.org/project/house-price-prediction-joaquin-iker/):
-  ```bash
-  pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ house-price-prediction-joaquin-iker
-  ```
-In uv 
+
+Using pip:
+
+```bash
+pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ house-price-prediction-joaquin-iker
+```
+Using uv:
 
 ```bash
 uv -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ house-price-prediction-joaquin-iker
