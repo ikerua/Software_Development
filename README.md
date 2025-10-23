@@ -37,8 +37,8 @@ Using pip:
 ```bash
 pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ house-price-prediction-joaquin-iker
 ```
-Using uv:
-
+#  Demo Launching
+If you want to show a demo, launch in your terminal:
 ```bash
 uvx -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ house-price-prediction-joaquin-iker
 ```
