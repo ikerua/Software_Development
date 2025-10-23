@@ -1,6 +1,12 @@
 """
 Performance Analysis Module for Gradio Interface
+
+This module provides comprehensive performance analysis tools for regression models
+through a Gradio interface. It includes metric calculations, various visualizations,
+and interactive analysis capabilities for model predictions.
 """
+
+__docformat__ = "numpy"
 
 import importlib.resources
 import gradio as gr
@@ -12,6 +18,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from textwrap import dedent
 
 # Setup styling
 sns.set_theme(context="notebook", style="whitegrid")
@@ -22,22 +29,131 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 # Metric calculation functions
 def rmse(y, yhat): 
+    """
+    Calculate Root Mean Squared Error.
+
+    Parameters
+    ----------
+    y : numpy.ndarray
+        Array of true values.
+    yhat : numpy.ndarray
+        Array of predicted values.
+
+    Returns
+    -------
+    float
+        Root Mean Squared Error value.
+
+    Examples
+    --------
+    >>> y = np.array([1.0, 2.0, 3.0])
+    >>> yhat = np.array([1.1, 2.1, 2.9])
+    >>> rmse(y, yhat)
+    0.1154...
+    """
     return float(np.sqrt(np.mean((y - yhat)**2)))
 
 def mae(y, yhat):  
+    """
+    Calculate Mean Absolute Error.
+
+    Parameters
+    ----------
+    y : numpy.ndarray
+        Array of true values.
+    yhat : numpy.ndarray
+        Array of predicted values.
+
+    Returns
+    -------
+    float
+        Mean Absolute Error value.
+
+    Examples
+    --------
+    >>> y = np.array([1.0, 2.0, 3.0])
+    >>> yhat = np.array([1.1, 2.1, 2.9])
+    >>> mae(y, yhat)
+    0.1
+    """
     return float(np.mean(np.abs(y - yhat)))
 
 def r2(y, yhat):
+    """
+    Calculate R² (coefficient of determination) score.
+
+    Parameters
+    ----------
+    y : numpy.ndarray
+        Array of true values.
+    yhat : numpy.ndarray
+        Array of predicted values.
+
+    Returns
+    -------
+    float
+        R² score. Returns np.nan if total sum of squares is zero.
+
+    Examples
+    --------
+    >>> y = np.array([1.0, 2.0, 3.0])
+    >>> yhat = np.array([1.1, 2.1, 2.9])
+    >>> r2(y, yhat)
+    0.96...
+    """
     ss_res = np.sum((y - yhat)**2)
     ss_tot = np.sum((y - np.mean(y))**2)
     return float(1 - ss_res/ss_tot) if ss_tot > 0 else np.nan
 
 def mape(y, yhat, eps=1e-8):
+    """
+    Calculate Mean Absolute Percentage Error.
+
+    Parameters
+    ----------
+    y : numpy.ndarray
+        Array of true values.
+    yhat : numpy.ndarray
+        Array of predicted values.
+    eps : float, optional
+        Small epsilon value to prevent division by zero, by default 1e-8.
+
+    Returns
+    -------
+    float
+        Mean Absolute Percentage Error as a percentage.
+
+    Examples
+    --------
+    >>> y = np.array([100.0, 200.0, 300.0])
+    >>> yhat = np.array([110.0, 190.0, 310.0])
+    >>> mape(y, yhat)
+    6.666...
+    """
     denom = np.maximum(np.abs(y), eps)
     return float(np.mean(np.abs((y - yhat) / denom))) * 100.0
 
 def load_predictions(pred_path):
-    """Load and validate predictions file"""
+    """
+    Load and validate predictions file.
+
+    Parameters
+    ----------
+    pred_path : str or Path
+        Path to the predictions CSV file.
+
+    Returns
+    -------
+    tuple of (pandas.DataFrame or None, str or None)
+        Returns (DataFrame, None) if successful, or (None, error_message) if failed.
+        DataFrame contains columns 'y_true' and 'prediction'.
+
+    Examples
+    --------
+    >>> pred_df, error = load_predictions("predictions.csv")
+    >>> if error is None:
+    ...     print(pred_df.head())
+    """
     try:
         pred_path = Path(pred_path)
         if not pred_path.exists():
@@ -55,12 +171,25 @@ def load_predictions(pred_path):
     except Exception as e:
         return None, f"❌ Error loading file: {str(e)}"
 
-import gradio as gr
-from textwrap import dedent
-
-
 def calculate_metrics(pred_path):
-    """Calculate all metrics and display summary"""
+    """
+    Calculate all performance metrics and display summary.
+
+    Parameters
+    ----------
+    pred_path : str or Path
+        Path to the predictions CSV file.
+
+    Returns
+    -------
+    tuple of (gr.Markdown, pandas.DataFrame or None)
+        Returns formatted metrics summary as Markdown and preview DataFrame,
+        or error message if loading fails.
+
+    Examples
+    --------
+    >>> metrics_md, preview_df = calculate_metrics("predictions.csv")
+    """
     pred_df, error = load_predictions(pred_path)
     if error:
         return gr.Markdown(f"### ❌ Error\n\n{error}"), None
@@ -104,6 +233,21 @@ def calculate_metrics(pred_path):
     return gr.Markdown(value=metrics_text), pred_df.head(20)
 
 def get_package_data_paths():
+    """
+    Get standardized paths for package data directories.
+
+    Creates necessary directories if they don't exist.
+
+    Returns
+    -------
+    tuple of (Path, Path, Path)
+        Returns (models_dir, reports_dir, data_dir) as Path objects.
+
+    Examples
+    --------
+    >>> models_dir, reports_dir, data_dir = get_package_data_paths()
+    >>> print(models_dir)
+    """
     package_base = importlib.resources.files("my_project").parent
     
     models_dir = package_base / "models"
@@ -118,7 +262,25 @@ def get_package_data_paths():
     return models_dir, reports_dir, data_dir
 
 def plot_predictions_vs_actual(pred_path):
-    """Scatter plot: Actual vs Predicted"""
+    """
+    Create scatter plot comparing actual vs predicted values.
+
+    Parameters
+    ----------
+    pred_path : str or Path
+        Path to the predictions CSV file.
+
+    Returns
+    -------
+    tuple of (matplotlib.figure.Figure or None, str)
+        Returns (figure, status_message) if successful, or (None, error_message) if failed.
+
+    Examples
+    --------
+    >>> fig, status = plot_predictions_vs_actual("predictions.csv")
+    >>> if fig is not None:
+    ...     plt.show()
+    """
     pred_df, error = load_predictions(pred_path)
     if error:
         return None, error
@@ -162,7 +324,25 @@ def plot_predictions_vs_actual(pred_path):
         return None, f"❌ Error: {str(e)}"
 
 def plot_training_validation_loss(log_dir):
-    """Plot training and validation loss curves"""
+    """
+    Plot training and validation loss curves over epochs.
+
+    Parameters
+    ----------
+    log_dir : str or Path
+        Path to the directory containing metrics.csv file.
+
+    Returns
+    -------
+    tuple of (matplotlib.figure.Figure or None, str)
+        Returns (figure, status_message) if successful, or (None, error_message) if failed.
+
+    Examples
+    --------
+    >>> fig, status = plot_training_validation_loss("logs/version_1")
+    >>> if fig is not None:
+    ...     plt.show()
+    """
     try:
         metrics_path = Path(log_dir) / "metrics.csv"
         
@@ -198,7 +378,27 @@ def plot_training_validation_loss(log_dir):
         return None, f"❌ Error: {str(e)}"
 
 def plot_residuals(pred_path, bins):
-    """Plot residuals distribution"""
+    """
+    Plot residuals distribution with histogram and Q-Q plot.
+
+    Parameters
+    ----------
+    pred_path : str or Path
+        Path to the predictions CSV file.
+    bins : int
+        Number of bins for the histogram.
+
+    Returns
+    -------
+    tuple of (matplotlib.figure.Figure or None, str)
+        Returns (figure, status_message) if successful, or (None, error_message) if failed.
+
+    Examples
+    --------
+    >>> fig, status = plot_residuals("predictions.csv", bins=40)
+    >>> if fig is not None:
+    ...     plt.show()
+    """
     pred_df, error = load_predictions(pred_path)
     if error:
         return None, error
@@ -245,7 +445,29 @@ def plot_residuals(pred_path, bins):
         return None, f"❌ Error: {str(e)}"
 
 def plot_worst_predictions(pred_path, top_n):
-    """Plot worst predictions by MSE with dual bars"""
+    """
+    Plot worst predictions by MSE with normalized dual bar chart.
+
+    Parameters
+    ----------
+    pred_path : str or Path
+        Path to the predictions CSV file.
+    top_n : int
+        Number of worst predictions to display.
+
+    Returns
+    -------
+    tuple of (matplotlib.figure.Figure or None, pandas.DataFrame or None, str)
+        Returns (figure, dataframe, status_message) if successful, 
+        or (None, None, error_message) if failed.
+
+    Examples
+    --------
+    >>> fig, df, status = plot_worst_predictions("predictions.csv", top_n=20)
+    >>> if fig is not None:
+    ...     plt.show()
+    ...     print(df)
+    """
     pred_df, error = load_predictions(pred_path)
     if error:
         return None, None, error
@@ -304,7 +526,29 @@ def plot_worst_predictions(pred_path, top_n):
         return None, None, f"❌ Error: {str(e)}\n\n{traceback.format_exc()}"
 
 def plot_error_by_quantiles(pred_path, n_quantiles):
-    """Plot error by target quantiles"""
+    """
+    Plot error metrics (RMSE, MAE) across target value quantiles.
+
+    Parameters
+    ----------
+    pred_path : str or Path
+        Path to the predictions CSV file.
+    n_quantiles : int
+        Number of quantiles to divide the target values into.
+
+    Returns
+    -------
+    tuple of (matplotlib.figure.Figure or None, pandas.DataFrame or None, str)
+        Returns (figure, grouped_stats_dataframe, status_message) if successful, 
+        or (None, None, error_message) if failed.
+
+    Examples
+    --------
+    >>> fig, stats_df, status = plot_error_by_quantiles("predictions.csv", n_quantiles=5)
+    >>> if fig is not None:
+    ...     plt.show()
+    ...     print(stats_df)
+    """
     pred_df, error = load_predictions(pred_path)
     if error:
         return None, None, error
@@ -344,7 +588,36 @@ def plot_error_by_quantiles(pred_path, n_quantiles):
         return None, None, f"❌ Error: {str(e)}"
 
 def plot_error_vs_features(pred_path, test_path, top_n):
-    """Plot error vs top correlated features"""
+    """
+    Plot absolute error vs top correlated features.
+
+    Identifies features most correlated with prediction error and creates
+    scatter plots showing the relationship between each feature and error magnitude.
+
+    Parameters
+    ----------
+    pred_path : str or Path
+        Path to the predictions CSV file.
+    test_path : str or Path
+        Path to the test data CSV file containing features.
+    top_n : int
+        Number of top correlated features to plot.
+
+    Returns
+    -------
+    tuple of (matplotlib.figure.Figure or None, pandas.DataFrame or None, str)
+        Returns (figure, correlation_dataframe, status_message) if successful, 
+        or (None, None, error_message) if failed.
+
+    Examples
+    --------
+    >>> fig, corr_df, status = plot_error_vs_features(
+    ...     "predictions.csv", "test.csv", top_n=6
+    ... )
+    >>> if fig is not None:
+    ...     plt.show()
+    ...     print(corr_df)
+    """
     pred_df, error = load_predictions(pred_path)
     if error:
         return None, None, error
@@ -417,7 +690,23 @@ def plot_error_vs_features(pred_path, test_path, top_n):
         return None, None, f"❌ Error: {str(e)}\n\n{traceback.format_exc()}"
 
 def create_analysis_tab():
-    """Create the Performance Analysis tab - Main export function"""
+    """
+    Create the Performance Analysis tab for Gradio interface.
+
+    This is the main export function that builds the complete interactive
+    analysis interface with multiple visualization tabs.
+
+    Returns
+    -------
+    None
+        Creates Gradio interface components as side effect.
+
+    Examples
+    --------
+    >>> with gr.Blocks() as demo:
+    ...     create_analysis_tab()
+    >>> demo.launch()
+    """
     
     with gr.Tab("📊 Performance Analysis"):
         gr.Markdown(
@@ -542,7 +831,7 @@ def create_analysis_tab():
                 )
             
             # Tab 7: Error vs Features
-            with gr.Tab("🔍 Error vs Features"):
+            with gr.Tab("🔎 Error vs Features"):
                 with gr.Row():
                     top_features_n = gr.Slider(3, 9, 6, step=1, label="Top N Features")                
                 plot_features_btn = gr.Button("📈 Generate Plot", variant="primary")
@@ -555,4 +844,3 @@ def create_analysis_tab():
                     inputs=[pred_path_input, test_path_input, top_features_n],
                     outputs=[features_plot, features_corr, features_status]
                 )
-        
