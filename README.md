@@ -40,5 +40,5 @@ pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/
 Using uv:
 
 ```bash
-uv -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ house-price-prediction-joaquin-iker
+uvx -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ house-price-prediction-joaquin-iker
 ```
