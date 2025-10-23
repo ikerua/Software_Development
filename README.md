@@ -20,6 +20,11 @@ Our House Pricing Dataset is sourced from [Kaggle](https://www.kaggle.com/datase
 - *Neighborhood_Quality:* A rating of the neighborhood’s quality on a scale of 1-10, where 10 indicates a high-quality neighborhood. Better neighborhoods usually command higher prices.
 - *House_Price (Target Variable):* The price of the house, which is the dependent variable you aim to predict.
 
+##  Demo Launching
+If you want to show a demo, launch in your terminal:
+```bash
+uvx -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ house-price-prediction-joaquin-iker
+```
 ## Setup Instructions
 
 **Dataset**
@@ -36,9 +41,4 @@ Using pip:
 
 ```bash
 pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ house-price-prediction-joaquin-iker
-```
-#  Demo Launching
-If you want to show a demo, launch in your terminal:
-```bash
-uvx -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ house-price-prediction-joaquin-iker
 ```
