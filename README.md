@@ -42,3 +42,8 @@ Using pip:
 ```bash
 pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ house-price-prediction-joaquin-iker
 ```
+Using uv:
+
+```bash
+uv add -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ house-price-prediction-joaquin-iker
+```
