@@ -1,2 +1,0 @@
-[console_scripts]
-house-price-prediction-joaquin-iker = my_project.gradio.gradio_main:main
